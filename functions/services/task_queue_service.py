@@ -85,8 +85,8 @@ class TaskQueueService:
                         "Content-Type": "application/json",
                     },
                     "body": json.dumps(task_payload).encode(),
-                },
-                "name": self._generate_task_name(generation_request_id),
+                }
+                # Note: Omitting "name" field to let Cloud Tasks auto-generate task names
             }
             
             # Add schedule time if delay is specified
@@ -153,6 +153,9 @@ class TaskQueueService:
         """
         Cancel a queued task.
         
+        Note: Since we're using auto-generated task names, cancellation by generation_request_id
+        is not directly supported. This method is kept for interface compatibility.
+        
         Args:
             generation_request_id: Generation request ID to cancel
             
@@ -163,17 +166,8 @@ class TaskQueueService:
             self.logger.info(f"Emulator mode: Cannot cancel task {generation_request_id}")
             return True  # Return True since emulator processes immediately
         
-        try:
-            task_name = self._generate_task_name(generation_request_id)
-            full_task_name = f"{self.parent}/tasks/{task_name}"
-            
-            self.client.delete_task(name=full_task_name)
-            self.logger.info(f"Task cancelled for generation {generation_request_id}")
-            return True
-            
-        except Exception as e:
-            self.logger.error(f"Failed to cancel task for generation {generation_request_id}: {str(e)}")
-            return False
+        self.logger.warning(f"Task cancellation not supported with auto-generated names for {generation_request_id}")
+        return False  # Cannot cancel without knowing the auto-generated task name
     
     def _get_worker_function_url(self) -> str:
         """Get the URL for the worker function."""

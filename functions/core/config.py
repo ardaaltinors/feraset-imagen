@@ -8,7 +8,7 @@ class Config:
     """Application configuration."""
     
     # Firebase settings
-    PROJECT_ID = "demo-project"
+    PROJECT_ID = "feraset-imagen"
     
     # Firestore collections
     COLLECTIONS = {
