@@ -3,6 +3,8 @@
 import logging
 from typing import Dict, Any
 from repositories import ReportRepository
+from .anomaly_detection_service import AnomalyDetectionService
+from core import Config
 
 
 class ReportService:
@@ -11,6 +13,7 @@ class ReportService:
     def __init__(self):
         """Initialize report service."""
         self.report_repository = ReportRepository()
+        self.anomaly_detection_service = AnomalyDetectionService()
         self.logger = logging.getLogger(__name__)
     
     def generate_weekly_report(self) -> Dict[str, Any]:
@@ -34,6 +37,20 @@ class ReportService:
                     "error_type": weekly_stats.get("error_type", "system")
                 }
             
+            # Get historical data for anomaly detection
+            historical_reports = self.report_repository.get_historical_reports(
+                days_back=Config.ANOMALY_DETECTION["historical_days"]
+            )
+            
+            # Perform anomaly detection
+            anomaly_analysis = self.anomaly_detection_service.detect_anomalies(
+                current_stats=weekly_stats,
+                historical_data=historical_reports
+            )
+            
+            # Add anomaly analysis to weekly stats
+            weekly_stats["anomaly_analysis"] = anomaly_analysis
+            
             # Save report to database
             save_success = self.report_repository.save_weekly_report(weekly_stats)
             
@@ -45,12 +62,22 @@ class ReportService:
                     "report_data": weekly_stats
                 }
             
+            # Log anomaly detection results
+            anomaly_count = len(anomaly_analysis.get("detected_anomalies", []))
+            severity = anomaly_analysis.get("severity_level", "normal")
+            
+            if anomaly_count > 0:
+                self.logger.warning(f"Anomaly detection: {anomaly_count} anomalies detected with severity: {severity}")
+            else:
+                self.logger.info("Anomaly detection: No anomalies detected")
+            
             self.logger.info("Weekly report generated and saved successfully")
             
             return {
                 "reportStatus": "success",
                 "report_data": weekly_stats,
-                "summary": self._generate_report_summary(weekly_stats)
+                "summary": self._generate_report_summary(weekly_stats),
+                "anomaly_summary": self._generate_anomaly_summary(anomaly_analysis)
             }
             
         except Exception as e:
@@ -99,3 +126,46 @@ class ReportService:
             return "none"
         
         return max(breakdown.items(), key=lambda x: x[1])[0] if breakdown else "none"
+    
+    def _generate_anomaly_summary(self, anomaly_analysis: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Generate a concise summary of anomaly detection results.
+        
+        Args:
+            anomaly_analysis: Full anomaly analysis data
+            
+        Returns:
+            Dict containing key anomaly metrics
+        """
+        try:
+            anomalies = anomaly_analysis.get("detected_anomalies", [])
+            
+            # Count anomalies by type and severity
+            type_counts = {}
+            severity_counts = {"low": 0, "medium": 0, "high": 0, "critical": 0}
+            
+            for anomaly in anomalies:
+                anomaly_type = anomaly.get("type", "unknown")
+                severity = anomaly.get("severity", "low")
+                
+                type_counts[anomaly_type] = type_counts.get(anomaly_type, 0) + 1
+                severity_counts[severity] = severity_counts.get(severity, 0) + 1
+            
+            # Get most critical anomalies
+            critical_anomalies = [
+                a for a in anomalies 
+                if a.get("severity") in ["high", "critical"]
+            ]
+            
+            return {
+                "total_anomalies": len(anomalies),
+                "severity_level": anomaly_analysis.get("severity_level", "normal"),
+                "anomaly_score": anomaly_analysis.get("anomaly_score", 0),
+                "severity_breakdown": {k: v for k, v in severity_counts.items() if v > 0},
+                "type_breakdown": type_counts,
+                "critical_anomalies_count": len(critical_anomalies),
+                "requires_attention": len(critical_anomalies) > 0 or anomaly_analysis.get("severity_level") in ["high", "critical"],
+                "analysis_timestamp": anomaly_analysis.get("analysis_timestamp")
+            }
+        except Exception:
+            return {"error": "Failed to generate anomaly summary"}

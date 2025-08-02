@@ -223,6 +223,38 @@ class ReportRepository(BaseRepository):
         
         return model_stats
     
+    def get_historical_reports(self, days_back: int = 14) -> List[Dict[str, Any]]:
+        """
+        Get historical weekly reports for anomaly detection comparison.
+        
+        Args:
+            days_back: Number of days to look back for historical data
+            
+        Returns:
+            List of historical report data
+        """
+        try:
+            cutoff_date = datetime.now() - timedelta(days=days_back)
+            
+            docs = (
+                self.db.collection(Config.get_collection_name("reports"))
+                .where("report_type", "==", "weekly")
+                .where("generated_at", ">=", cutoff_date)
+                .order_by("generated_at", direction="DESCENDING")
+                .limit(10)  # Limit to last 10 reports
+                .stream()
+            )
+            
+            reports = []
+            for doc in docs:
+                report_data = doc.to_dict()
+                report_data["id"] = doc.id
+                reports.append(report_data)
+            
+            return reports
+        except Exception:
+            return []
+    
     def save_weekly_report(self, report_data: Dict[str, Any]) -> bool:
         """
         Save weekly report to database.

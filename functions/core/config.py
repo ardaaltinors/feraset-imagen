@@ -17,7 +17,8 @@ class Config:
         "sizes": "sizes",
         "users": "users",
         "images": "images",
-        "generation_requests": "generation_requests"
+        "generation_requests": "generation_requests",
+        "reports": "reports"
     }
     
     # Logging configuration
@@ -25,6 +26,17 @@ class Config:
     
     # Firebase Functions settings
     MAX_INSTANCES = 10
+    
+    # Anomaly detection thresholds
+    ANOMALY_DETECTION = {
+        "user_request_spike_threshold": 10,  # Requests per user per day above average
+        "total_request_spike_multiplier": 2.5,  # Total requests multiplier vs historical
+        "credit_consumption_spike_multiplier": 3.0,  # Credit usage multiplier vs historical
+        "failure_rate_threshold": 0.15,  # 15% failure rate threshold
+        "new_user_spike_threshold": 5,  # New users per day threshold
+        "single_user_credit_threshold": 50,  # Credits consumed by single user per day
+        "historical_days": 14  # Days to look back for historical averages
+    }
     
     @classmethod
     def get_collection_name(cls, collection: str) -> str:
