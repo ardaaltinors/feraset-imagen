@@ -3,7 +3,7 @@
 from firebase_functions import https_fn
 from firebase_functions.options import set_global_options
 from firebase_admin import initialize_app
-from controllers import SeedController, UserController, GenerationController
+from controllers import SeedController, UserController, GenerationController, ReportController
 from core import Config, setup_logging
 
 # Setup logging
@@ -17,6 +17,7 @@ initialize_app()
 seed_controller = SeedController()
 user_controller = UserController()
 generation_controller = GenerationController()
+report_controller = ReportController()
 
 
 @https_fn.on_request()
@@ -111,3 +112,17 @@ def getGenerationRequest(req: https_fn.Request) -> https_fn.Response:
         https_fn.Response: Generation request details
     """
     return generation_controller.get_generation_request(req)
+
+
+@https_fn.on_request()
+def scheduleWeeklyReport(req: https_fn.Request) -> https_fn.Response:
+    """
+    Generate weekly usage and credit consumption report.
+    
+    This endpoint is designed to be triggered by a scheduler.
+    No input parameters required.
+    
+    Returns:
+        https_fn.Response: JSON with reportStatus and analytics data
+    """
+    return report_controller.schedule_weekly_report(req)
