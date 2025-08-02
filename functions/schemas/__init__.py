@@ -7,7 +7,12 @@ from .models import (
     UserModel,
     TransactionType,
     TransactionModel,
-    UserCreditsResponse
+    UserCreditsResponse,
+    AIModel,
+    GenerationStatus,
+    CreateGenerationRequestModel,
+    GenerationRequestModel,
+    CreateGenerationResponseModel
 )
 
 __all__ = [
@@ -17,5 +22,10 @@ __all__ = [
     "UserModel",
     "TransactionType",
     "TransactionModel", 
-    "UserCreditsResponse"
+    "UserCreditsResponse",
+    "AIModel",
+    "GenerationStatus",
+    "CreateGenerationRequestModel",
+    "GenerationRequestModel",
+    "CreateGenerationResponseModel"
 ]

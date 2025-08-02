@@ -66,19 +66,11 @@ class UserModel(BaseModel):
     name: str = Field(..., min_length=1, max_length=100)
     email: EmailStr
     current_credits: int = Field(..., ge=0)
-    total_credits: int = Field(..., ge=0)
     total_images_generated: int = Field(default=0, ge=0)
     is_active: bool = True
     created_at: datetime = Field(default_factory=datetime.now)
     updated_at: datetime = Field(default_factory=datetime.now)
     last_login: Optional[datetime] = None
-
-    @validator('total_credits')
-    def validate_total_credits(cls, v, values):
-        """Ensure total_credits >= current_credits."""
-        if 'current_credits' in values and v < values['current_credits']:
-            raise ValueError('total_credits must be >= current_credits')
-        return v
 
     class Config:
         json_encoders = {
@@ -112,6 +104,66 @@ class UserCreditsResponse(BaseModel):
     """Response schema for getUserCredits endpoint."""
     current_credits: int = Field(..., ge=0)
     transactions: List[TransactionModel] = Field(default_factory=list)
+
+    class Config:
+        json_encoders = {
+            datetime: lambda v: v.isoformat()
+        }
+
+
+class AIModel(str, Enum):
+    """AI models for image generation."""
+    MODEL_A = "Model A"
+    MODEL_B = "Model B"
+
+
+class GenerationStatus(str, Enum):
+    """Generation request status."""
+    PENDING = "pending"
+    PROCESSING = "processing"
+    COMPLETED = "completed"
+    FAILED = "failed"
+    REFUNDED = "refunded"
+
+
+class CreateGenerationRequestModel(BaseModel):
+    """Schema for createGenerationRequest input."""
+    userId: str = Field(..., min_length=1, max_length=100)
+    model: AIModel
+    style: str = Field(..., min_length=1, max_length=50)
+    color: str = Field(..., min_length=1, max_length=50)
+    size: str = Field(..., pattern=r'^\d+x\d+$')
+    prompt: str = Field(..., min_length=1, max_length=1000)
+
+
+class GenerationRequestModel(BaseModel):
+    """Schema for generation request records."""
+    id: str = Field(..., min_length=1, max_length=100)
+    user_id: str = Field(..., min_length=1, max_length=100)
+    model: AIModel
+    style: str = Field(..., min_length=1, max_length=50)
+    color: str = Field(..., min_length=1, max_length=50)
+    size: str = Field(..., pattern=r'^\d+x\d+$')
+    prompt: str = Field(..., min_length=1, max_length=1000)
+    status: GenerationStatus = GenerationStatus.PENDING
+    credits_deducted: int = Field(..., ge=0)
+    image_url: Optional[str] = None
+    error_message: Optional[str] = None
+    created_at: datetime = Field(default_factory=datetime.now)
+    updated_at: datetime = Field(default_factory=datetime.now)
+    completed_at: Optional[datetime] = None
+
+    class Config:
+        json_encoders = {
+            datetime: lambda v: v.isoformat()
+        }
+
+
+class CreateGenerationResponseModel(BaseModel):
+    """Schema for createGenerationRequest response."""
+    generationRequestId: str = Field(..., min_length=1)
+    deductedCredits: int = Field(..., ge=0)
+    imageUrl: str = Field(..., min_length=1)
 
     class Config:
         json_encoders = {

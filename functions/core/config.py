@@ -16,7 +16,8 @@ class Config:
         "colors": "colors", 
         "sizes": "sizes",
         "users": "users",
-        "images": "images"
+        "images": "images",
+        "generation_requests": "generation_requests"
     }
     
     # Logging configuration

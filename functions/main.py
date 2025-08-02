@@ -3,7 +3,7 @@
 from firebase_functions import https_fn
 from firebase_functions.options import set_global_options
 from firebase_admin import initialize_app
-from controllers import SeedController, UserController
+from controllers import SeedController, UserController, GenerationController
 from core import Config, setup_logging
 
 # Setup logging
@@ -16,6 +16,7 @@ initialize_app()
 # Initialize controllers
 seed_controller = SeedController()
 user_controller = UserController()
+generation_controller = GenerationController()
 
 
 @https_fn.on_request()
@@ -76,3 +77,37 @@ def validate_user(req: https_fn.Request) -> https_fn.Response:
         https_fn.Response: User validation results
     """
     return user_controller.validate_user(req)
+
+
+@https_fn.on_request()
+def createGenerationRequest(req: https_fn.Request) -> https_fn.Response:
+    """
+    Create a new image generation request.
+    
+    Expected JSON payload:
+    {
+        "userId": "string",
+        "model": "Model A" | "Model B", 
+        "style": "realistic" | "anime" | "oil painting" | "sketch" | "cyberpunk" | "watercolor",
+        "color": "vibrant" | "monochrome" | "pastel" | "neon" | "vintage",
+        "size": "512x512" | "1024x1024" | "1024x1792",
+        "prompt": "string"
+    }
+    
+    Returns:
+        https_fn.Response: JSON with generationRequestId, deductedCredits, imageUrl
+    """
+    return generation_controller.create_generation_request(req)
+
+
+@https_fn.on_request()
+def getGenerationRequest(req: https_fn.Request) -> https_fn.Response:
+    """
+    Get generation request details by ID.
+    
+    Accepts generationRequestId as query parameter or in request body.
+    
+    Returns:
+        https_fn.Response: Generation request details
+    """
+    return generation_controller.get_generation_request(req)
