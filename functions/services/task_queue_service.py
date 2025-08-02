@@ -86,7 +86,6 @@ class TaskQueueService:
                     },
                     "body": json.dumps(task_payload).encode(),
                 }
-                # Note: Omitting "name" field to let Cloud Tasks auto-generate task names
             }
             
             # Add schedule time if delay is specified

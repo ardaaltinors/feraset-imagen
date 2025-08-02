@@ -2,6 +2,7 @@
 
 import random
 import logging
+import time
 from typing import Dict, Any, Optional
 from schemas import AIModel
 from datetime import datetime
@@ -49,6 +50,11 @@ class AIModelService:
                 model.value, style, color, size
             )
             
+            # Simulate realistic processing time (2 seconds to 2 minutes)
+            processing_time = random.uniform(2, 120)  # 2 to 120 seconds
+            self.logger.info(f"Simulating processing time: {processing_time:.1f} seconds")
+            time.sleep(processing_time)
+            
             # Simulate processing time and potential failure
             should_fail = random.random() < self.failure_rate
             
@@ -79,8 +85,8 @@ class AIModelService:
             )
             
             self.logger.info(
-                "Generation successful for request %s: %s", 
-                generation_request_id, image_url
+                "Generation successful for request %s after %.1f seconds: %s", 
+                generation_request_id, processing_time, image_url
             )
             
             return {
