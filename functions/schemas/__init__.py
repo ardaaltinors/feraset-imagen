@@ -12,7 +12,9 @@ from .models import (
     GenerationStatus,
     CreateGenerationRequestModel,
     GenerationRequestModel,
-    CreateGenerationResponseModel
+    CreateGenerationResponseModel,
+    GenerationStatusResponseModel,
+    TaskPayloadModel
 )
 
 __all__ = [
@@ -27,5 +29,7 @@ __all__ = [
     "GenerationStatus",
     "CreateGenerationRequestModel",
     "GenerationRequestModel",
-    "CreateGenerationResponseModel"
+    "CreateGenerationResponseModel",
+    "GenerationStatusResponseModel",
+    "TaskPayloadModel"
 ]

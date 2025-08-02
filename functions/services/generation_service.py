@@ -1,27 +1,33 @@
 """Service layer for generation request business logic."""
 
 import logging
-from typing import Dict, Any
+from datetime import datetime
+from typing import Dict, Any, Optional
 from repositories import GenerationRepository, UserRepository
 from services.ai_model_service import AIModelService
+from services.task_queue_service import TaskQueueService
 from schemas import (
     CreateGenerationRequestModel, 
     GenerationRequestModel,
     CreateGenerationResponseModel,
+    GenerationStatusResponseModel,
+    TaskPayloadModel,
     TransactionType,
     GenerationStatus,
     AIModel
 )
+from core import Config
 
 
 class GenerationService:
     """Service for handling generation request business logic."""
     
     def __init__(self):
-        """Initialize generation service with repositories and AI service."""
+        """Initialize generation service with repositories and services."""
         self.generation_repository = GenerationRepository()
         self.user_repository = UserRepository()
         self.ai_model_service = AIModelService(failure_rate=0.05)  # 5% failure rate
+        self.task_queue_service = TaskQueueService()
         self.logger = logging.getLogger(__name__)
     
     def create_generation_request(
@@ -29,17 +35,17 @@ class GenerationService:
         request_data: CreateGenerationRequestModel
     ) -> Dict[str, Any]:
         """
-        Process a new generation request with credit deduction and AI generation.
+        Create a new generation request and queue it for asynchronous processing.
         
         Args:
             request_data: Validated generation request data
             
         Returns:
-            Dict containing success status, generation ID, and image URL
+            Dict containing success status, generation ID, and queue information
         """
         try:
             self.logger.info(
-                "Processing generation request for user %s with model %s",
+                "Creating async generation request for user %s with model %s",
                 request_data.userId, request_data.model.value
             )
             
@@ -64,7 +70,7 @@ class GenerationService:
                 }
             
             # Step 3: Atomically deduct credits and create generation request
-            credit_deduction_result = self._deduct_credits_and_create_request(
+            credit_deduction_result = self._deduct_credits_and_create_request_async(
                 request_data, credit_cost, user_data
             )
             if not credit_deduction_result["success"]:
@@ -72,76 +78,67 @@ class GenerationService:
             
             generation_id = credit_deduction_result["generation_id"]
             
-            # Step 4: Attempt AI generation
-            generation_result = self.ai_model_service.generate_image(
+            # Step 4: Create task payload for background processing
+            task_payload = TaskPayloadModel(
+                generation_request_id=generation_id,
+                user_id=request_data.userId,
                 model=request_data.model,
                 style=request_data.style,
                 color=request_data.color,
                 size=request_data.size,
                 prompt=request_data.prompt,
-                generation_request_id=generation_id
+                priority=Config.GENERATION_CONFIG["default_priority"]
             )
             
-            # Step 5: Handle generation result
-            if generation_result["success"]:
-                # Success: Update generation request with image URL
-                image_url = generation_result["image_url"]
-                self.generation_repository.complete_generation_request(
-                    generation_id, image_url
-                )
-                
-                self.logger.info(
-                    "Generation successful for request %s: %s",
-                    generation_id, image_url
-                )
-                
-                return {
-                    "success": True,
-                    "data": {
-                        "generationRequestId": generation_id,
-                        "deductedCredits": credit_cost,
-                        "imageUrl": image_url
-                    },
-                    "message": "Image generated successfully"
-                }
-            else:
-                # Failure: Refund credits and update status
-                error_message = generation_result.get("error", "Generation failed")
+            # Step 5: Enqueue task for background processing
+            queue_success = self.task_queue_service.enqueue_generation_task(
+                generation_request_id=generation_id,
+                task_payload=task_payload.dict(),
+                priority=task_payload.priority
+            )
+            
+            if not queue_success:
+                # Revert the credit deduction if queueing fails
                 refund_result = self.generation_repository.atomic_credit_refund(
                     user_id=request_data.userId,
                     generation_id=generation_id,
                     credit_amount=credit_cost,
-                    error_message=error_message
+                    error_message="Failed to queue generation task"
                 )
                 
-                if refund_result["success"]:
-                    self.logger.warning(
-                        "Generation failed for request %s, credits refunded: %s",
-                        generation_id, error_message
-                    )
-                    
-                    return {
-                        "success": False,
-                        "message": f"Generation failed: {error_message}. Credits have been refunded.",
-                        "error": error_message,
-                        "error_type": "generation_failure",
-                        "refunded": True,
-                        "generation_request_id": generation_id
-                    }
-                else:
-                    # Critical error: generation failed AND refund failed
-                    self.logger.error(
-                        "CRITICAL: Generation failed AND refund failed for request %s",
-                        generation_id
-                    )
-                    
-                    return {
-                        "success": False,
-                        "message": "Generation failed and refund failed. Please contact support.",
-                        "error": f"Generation error: {error_message}. Refund error: {refund_result.get('error')}",
-                        "error_type": "critical_system_error",
-                        "generation_request_id": generation_id
-                    }
+                return {
+                    "success": False,
+                    "message": "Failed to queue generation request. Credits have been refunded.",
+                    "error": "Queue service unavailable",
+                    "error_type": "queue_failure",
+                    "refunded": refund_result["success"]
+                }
+            
+            # Step 6: Update status to queued
+            self.generation_repository.update_generation_request(
+                generation_id, 
+                {"status": GenerationStatus.QUEUED.value}
+            )
+            
+            # Step 7: Calculate estimated completion time
+            estimated_completion = self.task_queue_service.estimate_completion_time()
+            
+            self.logger.info(
+                "Generation request %s queued successfully for user %s",
+                generation_id, request_data.userId
+            )
+            
+            return {
+                "success": True,
+                "data": {
+                    "generationRequestId": generation_id,
+                    "status": GenerationStatus.QUEUED.value,
+                    "deductedCredits": credit_cost,
+                    "estimatedCompletionTime": estimated_completion.isoformat() if estimated_completion else None,
+                    "queuePosition": None  # Could be implemented with more complex queue tracking
+                },
+                "message": "Generation request queued successfully"
+            }
                     
         except Exception as e:
             self.logger.error(
@@ -204,14 +201,14 @@ class GenerationService:
             "current_credits": current_credits
         }
     
-    def _deduct_credits_and_create_request(
+    def _deduct_credits_and_create_request_async(
         self,
         request_data: CreateGenerationRequestModel,
         credit_cost: int,
         user_data: Dict[str, Any]
     ) -> Dict[str, Any]:
         """
-        Atomically deduct credits and create generation request.
+        Atomically deduct credits and create generation request for async processing.
         
         Args:
             request_data: Generation request data
@@ -221,7 +218,7 @@ class GenerationService:
         Returns:
             Dict with operation results
         """
-        # Prepare generation request data
+        # Prepare generation request data with pending status
         generation_data = {
             "user_id": request_data.userId,
             "model": request_data.model.value,
@@ -229,7 +226,7 @@ class GenerationService:
             "color": request_data.color,
             "size": request_data.size,
             "prompt": request_data.prompt,
-            "status": GenerationStatus.PROCESSING.value,
+            "status": GenerationStatus.PENDING.value,
             "credits_deducted": credit_cost
         }
         
@@ -251,7 +248,7 @@ class GenerationService:
         
         if result["success"]:
             self.logger.info(
-                "Credits deducted and generation request created: %s (Cost: %d)",
+                "Credits deducted and async generation request created: %s (Cost: %d)",
                 result["generation_id"], credit_cost
             )
         else:
@@ -261,6 +258,181 @@ class GenerationService:
             )
         
         return result
+    
+    def get_generation_status(self, generation_id: str) -> Dict[str, Any]:
+        """
+        Get current status of a generation request.
+        
+        Args:
+            generation_id: Generation request ID
+            
+        Returns:
+            Dict with generation status and details
+        """
+        try:
+            request_data = self.generation_repository.get_generation_request(generation_id)
+            
+            if not request_data:
+                return {
+                    "success": False,
+                    "message": f"Generation request not found: {generation_id}",
+                    "error": "Request does not exist",
+                    "error_type": "not_found"
+                }
+            
+            # Calculate progress based on status
+            progress = self._calculate_progress(request_data.get("status"))
+            
+            # Get estimated completion time if still processing
+            estimated_completion = None
+            if request_data.get("status") in [GenerationStatus.QUEUED.value, GenerationStatus.PROCESSING.value]:
+                estimated_completion = self.task_queue_service.estimate_completion_time()
+            
+            status_response = GenerationStatusResponseModel(
+                generationRequestId=generation_id,
+                status=request_data.get("status", GenerationStatus.PENDING.value),
+                imageUrl=request_data.get("image_url"),
+                error_message=request_data.get("error_message"),
+                progress=progress,
+                created_at=request_data.get("created_at"),
+                updated_at=request_data.get("updated_at"),
+                completed_at=request_data.get("completed_at"),
+                estimated_completion_time=estimated_completion
+            )
+            
+            return {
+                "success": True,
+                "data": status_response.dict(),
+                "message": "Generation status retrieved successfully"
+            }
+            
+        except Exception as e:
+            self.logger.error(
+                "Error retrieving generation status %s: %s", generation_id, str(e)
+            )
+            return {
+                "success": False,
+                "message": f"Failed to retrieve generation status: {str(e)}",
+                "error": str(e),
+                "error_type": "system"
+            }
+    
+    def process_generation_task(self, task_payload: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Process a generation task from the queue (called by background worker).
+        
+        Args:
+            task_payload: Task data from the queue
+            
+        Returns:
+            Dict with processing results
+        """
+        try:
+            # Validate and parse task payload
+            try:
+                payload = TaskPayloadModel(**task_payload)
+            except Exception as e:
+                self.logger.error(f"Invalid task payload: {str(e)}")
+                return {
+                    "success": False,
+                    "error": f"Invalid task payload: {str(e)}",
+                    "error_type": "validation"
+                }
+            
+            generation_id = payload.generation_request_id
+            
+            self.logger.info(f"Processing generation task: {generation_id}")
+            
+            # Update status to processing
+            self.generation_repository.update_generation_request(
+                generation_id,
+                {
+                    "status": GenerationStatus.PROCESSING.value,
+                    "updated_at": datetime.now()
+                }
+            )
+            
+            # Perform AI generation
+            generation_result = self.ai_model_service.generate_image(
+                model=payload.model,
+                style=payload.style,
+                color=payload.color,
+                size=payload.size,
+                prompt=payload.prompt,
+                generation_request_id=generation_id
+            )
+            
+            # Handle generation result
+            if generation_result["success"]:
+                # Success: Update generation request with image URL
+                image_url = generation_result["image_url"]
+                self.generation_repository.complete_generation_request(
+                    generation_id, image_url
+                )
+                
+                self.logger.info(
+                    "Background generation successful for request %s: %s",
+                    generation_id, image_url
+                )
+                
+                return {
+                    "success": True,
+                    "generation_id": generation_id,
+                    "image_url": image_url,
+                    "message": "Image generated successfully"
+                }
+            else:
+                # Failure: Refund credits and update status
+                error_message = generation_result.get("error", "Generation failed")
+                credit_cost = self._get_credit_cost_from_request(generation_id)
+                
+                refund_result = self.generation_repository.atomic_credit_refund(
+                    user_id=payload.user_id,
+                    generation_id=generation_id,
+                    credit_amount=credit_cost,
+                    error_message=error_message
+                )
+                
+                self.logger.warning(
+                    "Background generation failed for request %s: %s. Refund success: %s",
+                    generation_id, error_message, refund_result["success"]
+                )
+                
+                return {
+                    "success": False,
+                    "generation_id": generation_id,
+                    "error": error_message,
+                    "refunded": refund_result["success"],
+                    "message": f"Generation failed: {error_message}"
+                }
+                
+        except Exception as e:
+            self.logger.error(f"Unexpected error in process_generation_task: {str(e)}")
+            return {
+                "success": False,
+                "error": str(e),
+                "error_type": "system"
+            }
+    
+    def _calculate_progress(self, status: str) -> float:
+        """Calculate progress percentage based on status."""
+        status_progress = {
+            GenerationStatus.PENDING.value: 0.0,
+            GenerationStatus.QUEUED.value: 10.0,
+            GenerationStatus.PROCESSING.value: 50.0,
+            GenerationStatus.COMPLETED.value: 100.0,
+            GenerationStatus.FAILED.value: 100.0,
+            GenerationStatus.CANCELLED.value: 100.0
+        }
+        return status_progress.get(status, 0.0)
+    
+    def _get_credit_cost_from_request(self, generation_id: str) -> int:
+        """Get credit cost from existing generation request."""
+        try:
+            request_data = self.generation_repository.get_generation_request(generation_id)
+            return request_data.get("credits_deducted", 0) if request_data else 0
+        except Exception:
+            return 0
     
     def get_generation_request(self, generation_id: str) -> Dict[str, Any]:
         """

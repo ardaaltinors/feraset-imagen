@@ -126,3 +126,42 @@ def scheduleWeeklyReport(req: https_fn.Request) -> https_fn.Response:
         https_fn.Response: JSON with reportStatus and analytics data
     """
     return report_controller.schedule_weekly_report(req)
+
+
+@https_fn.on_request()
+def getGenerationStatus(req: https_fn.Request) -> https_fn.Response:
+    """
+    Get the current status of a generation request.
+    
+    Accepts generationRequestId as query parameter or in request body.
+    
+    Returns:
+        https_fn.Response: JSON with generation status, progress, and completion info
+    """
+    return generation_controller.get_generation_status(req)
+
+
+@https_fn.on_request()
+def processImageGeneration(req: https_fn.Request) -> https_fn.Response:
+    """
+    Background worker function for processing image generation tasks from Cloud Tasks.
+    
+    This function is triggered by Cloud Tasks queue and should not be called directly.
+    It processes the actual AI image generation in the background.
+    
+    Expected payload from Cloud Tasks:
+    {
+        "generation_request_id": "string",
+        "user_id": "string", 
+        "model": "Model A" | "Model B",
+        "style": "string",
+        "color": "string", 
+        "size": "string",
+        "prompt": "string",
+        "priority": "string"
+    }
+    
+    Returns:
+        https_fn.Response: JSON with processing results for Cloud Tasks
+    """
+    return generation_controller.process_background_generation(req)

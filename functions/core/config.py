@@ -27,6 +27,27 @@ class Config:
     # Firebase Functions settings
     MAX_INSTANCES = 10
     
+    # Cloud Tasks configuration
+    TASK_QUEUE_CONFIG = {
+        "retry_config": {
+            "max_attempts": 5,
+            "min_backoff_seconds": 60,
+            "max_backoff_seconds": 300
+        },
+        "rate_limits": {
+            "max_concurrent_dispatches": 10,
+            "max_dispatches_per_second": 2
+        }
+    }
+    
+    # Generation processing settings
+    GENERATION_CONFIG = {
+        "timeout_seconds": 300,  # 5 minutes for GPU processing
+        "max_queue_size": 1000,
+        "priority_levels": ["low", "normal", "high"],
+        "default_priority": "normal"
+    }
+    
     # Anomaly detection thresholds
     ANOMALY_DETECTION = {
         "user_request_spike_threshold": 10,  # Requests per user per day above average

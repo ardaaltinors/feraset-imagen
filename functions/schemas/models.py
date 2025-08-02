@@ -120,10 +120,12 @@ class AIModel(str, Enum):
 class GenerationStatus(str, Enum):
     """Generation request status."""
     PENDING = "pending"
+    QUEUED = "queued"
     PROCESSING = "processing"
     COMPLETED = "completed"
     FAILED = "failed"
     REFUNDED = "refunded"
+    CANCELLED = "cancelled"
 
 
 class CreateGenerationRequestModel(BaseModel):
@@ -162,10 +164,44 @@ class GenerationRequestModel(BaseModel):
 class CreateGenerationResponseModel(BaseModel):
     """Schema for createGenerationRequest response."""
     generationRequestId: str = Field(..., min_length=1)
+    status: GenerationStatus = GenerationStatus.QUEUED
     deductedCredits: int = Field(..., ge=0)
-    imageUrl: str = Field(..., min_length=1)
+    estimatedCompletionTime: Optional[datetime] = None
+    queuePosition: Optional[int] = None
 
     class Config:
         json_encoders = {
             datetime: lambda v: v.isoformat()
         }
+
+
+class GenerationStatusResponseModel(BaseModel):
+    """Schema for generation status response."""
+    generationRequestId: str = Field(..., min_length=1)
+    status: GenerationStatus
+    imageUrl: Optional[str] = None
+    error_message: Optional[str] = None
+    progress: Optional[float] = Field(None, ge=0.0, le=100.0)
+    created_at: datetime
+    updated_at: datetime
+    completed_at: Optional[datetime] = None
+    estimated_completion_time: Optional[datetime] = None
+    queue_position: Optional[int] = None
+
+    class Config:
+        json_encoders = {
+            datetime: lambda v: v.isoformat()
+        }
+
+
+class TaskPayloadModel(BaseModel):
+    """Schema for Cloud Tasks payload."""
+    generation_request_id: str = Field(..., min_length=1)
+    user_id: str = Field(..., min_length=1)
+    model: AIModel
+    style: str = Field(..., min_length=1, max_length=50)
+    color: str = Field(..., min_length=1, max_length=50)
+    size: str = Field(..., pattern=r'^\d+x\d+$')
+    prompt: str = Field(..., min_length=1, max_length=1000)
+    priority: str = Field(default="normal")
+    retry_count: int = Field(default=0, ge=0)
