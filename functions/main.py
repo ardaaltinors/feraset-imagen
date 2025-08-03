@@ -87,5 +87,6 @@ def scheduleWeeklyReport(req: https_fn.Request) -> https_fn.Response:
     Generate weekly usage and credit consumption report.
     
     This endpoint is designed to be triggered by a scheduler.
+    TODO: will be updated with @scheduler_fn
     """
     return report_controller.schedule_weekly_report(req)
