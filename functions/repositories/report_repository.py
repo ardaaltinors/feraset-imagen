@@ -16,9 +16,6 @@ class ReportRepository(BaseRepository):
     def get_weekly_usage_stats(self) -> Dict[str, Any]:
         """
         Aggregate weekly usage statistics.
-        
-        Returns:
-            Dict containing weekly usage metrics
         """
         try:
             # Calculate date range for the past week
@@ -226,12 +223,6 @@ class ReportRepository(BaseRepository):
     def get_historical_reports(self, days_back: int = 14) -> List[Dict[str, Any]]:
         """
         Get historical weekly reports for anomaly detection comparison.
-        
-        Args:
-            days_back: Number of days to look back for historical data
-            
-        Returns:
-            List of historical report data
         """
         try:
             cutoff_date = datetime.now() - timedelta(days=days_back)
@@ -258,12 +249,6 @@ class ReportRepository(BaseRepository):
     def save_weekly_report(self, report_data: Dict[str, Any]) -> bool:
         """
         Save weekly report to database.
-        
-        Args:
-            report_data: Report data to save
-            
-        Returns:
-            True if successful, False otherwise
         """
         try:
             report_id = f"weekly_report_{datetime.now().strftime('%Y_%m_%d')}"

@@ -1,10 +1,56 @@
 {
+  "hosting": {
+    "site": "feraset-imagen",
+    "public": "public",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "/api/generation/create",
+        "function": "createGenerationRequest"
+      },
+      {
+        "source": "/api/generation/status",
+        "function": "getGenerationStatus"
+      },
+      {
+        "source": "/api/generation/request",
+        "function": "getGenerationRequest"
+      },
+      {
+        "source": "/api/users/credits",
+        "function": "getUserCredits"
+      },
+      {
+        "source": "/api/admin/seed",
+        "function": "seed_database"
+      },
+      {
+        "source": "/api/admin/reports",
+        "function": "scheduleWeeklyReport"
+      },
+      {
+        "source": "/api/admin/validate-user",
+        "function": "validate_user"
+      },
+      {
+        "source": "/api/internal/process",
+        "function": "processImageGeneration"
+      }
+    ]
+  },
   "emulators": {
     "functions": {
       "port": 5551
     },
     "firestore": {
       "port": 5561
+    },
+    "hosting": {
+      "port": 5000
     },
     "ui": {
       "enabled": true

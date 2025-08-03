@@ -16,12 +16,6 @@ class SeedController:
     def seed_database(self, req: https_fn.Request) -> https_fn.Response:
         """
         HTTP endpoint to seed the database with initial data.
-        
-        Args:
-            req: Firebase Functions HTTP request object
-            
-        Returns:
-            https_fn.Response: Success message or error details
         """
         try:
             # Log request info
@@ -55,40 +49,4 @@ class SeedController:
                 f"Controller error: {str(e)}",
                 status=500
             )
-    
-    def validate_seed_data(self, req: https_fn.Request) -> https_fn.Response:
-        """
-        HTTP endpoint to validate seed data without inserting to database.
-        
-        Args:
-            req: Firebase Functions HTTP request object
             
-        Returns:
-            https_fn.Response: Validation results
-        """
-        try:
-            self.logger.info(
-                "Validate seed data request from %s",
-                req.headers.get('X-Forwarded-For', 'unknown')
-            )
-            
-            # Call service layer
-            result = self.seed_service.validate_seed_data()
-            
-            if result.get("success"):
-                return https_fn.Response(
-                    result.get("message", "Validation passed"),
-                    status=200
-                )
-            else:
-                return https_fn.Response(
-                    result.get("message", "Validation failed"),
-                    status=400
-                )
-                
-        except Exception as e:
-            self.logger.error("Controller error in validate_seed_data: %s", str(e))
-            return https_fn.Response(
-                f"Controller error: {str(e)}",
-                status=500
-            )

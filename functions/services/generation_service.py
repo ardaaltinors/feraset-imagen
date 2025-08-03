@@ -36,12 +36,6 @@ class GenerationService:
     ) -> Dict[str, Any]:
         """
         Create a new generation request and queue it for asynchronous processing.
-        
-        Args:
-            request_data: Validated generation request data
-            
-        Returns:
-            Dict containing success status, generation ID, and queue information
         """
         try:
             self.logger.info(
@@ -157,12 +151,6 @@ class GenerationService:
     ) -> Dict[str, Any]:
         """
         Validate user exists and has sufficient credits.
-        
-        Args:
-            request_data: Generation request data
-            
-        Returns:
-            Dict with validation results
         """
         # Check if user exists
         user_data = self.user_repository.get_user_by_id(request_data.userId)
@@ -208,15 +196,7 @@ class GenerationService:
         user_data: Dict[str, Any]
     ) -> Dict[str, Any]:
         """
-        Atomically deduct credits and create generation request for async processing.
-        
-        Args:
-            request_data: Generation request data
-            credit_cost: Credits to deduct
-            user_data: Current user data
-            
-        Returns:
-            Dict with operation results
+        Deduct credits and create generation request for task processing.
         """
         # Prepare generation request data with pending status
         generation_data = {
@@ -262,12 +242,6 @@ class GenerationService:
     def get_generation_status(self, generation_id: str) -> Dict[str, Any]:
         """
         Get current status of a generation request.
-        
-        Args:
-            generation_id: Generation request ID
-            
-        Returns:
-            Dict with generation status and details
         """
         try:
             request_data = self.generation_repository.get_generation_request(generation_id)
@@ -320,12 +294,6 @@ class GenerationService:
     def process_generation_task(self, task_payload: Dict[str, Any]) -> Dict[str, Any]:
         """
         Process a generation task from the queue (called by background worker).
-        
-        Args:
-            task_payload: Task data from the queue
-            
-        Returns:
-            Dict with processing results
         """
         try:
             # Validate and parse task payload
@@ -437,12 +405,6 @@ class GenerationService:
     def get_generation_request(self, generation_id: str) -> Dict[str, Any]:
         """
         Get generation request by ID.
-        
-        Args:
-            generation_id: Generation request ID
-            
-        Returns:
-            Dict with generation request data or error
         """
         try:
             request_data = self.generation_repository.get_generation_request(generation_id)

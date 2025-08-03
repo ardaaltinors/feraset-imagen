@@ -16,9 +16,6 @@ class SeedService:
     def seed_database(self) -> Dict[str, Any]:
         """
         Seed the database with initial configuration data and test users.
-        
-        Returns:
-            Dict containing success status, counts, or error details
         """
         try:
             self.logger.info("Starting database seeding process")
@@ -74,48 +71,6 @@ class SeedService:
             return {
                 "success": False,
                 "message": error_msg,
-                "error": str(e),
-                "error_type": "system"
-            }
-    
-    def validate_seed_data(self) -> Dict[str, Any]:
-        """
-        Validate seed data without actually inserting to database.
-        
-        Returns:
-            Dict containing validation results
-        """
-        try:
-            self.logger.info("Validating seed data")
-            
-            # Get validated data (this will raise exceptions if invalid)
-            styles = self.seed_repository.get_validated_styles()
-            colors = self.seed_repository.get_validated_colors()
-            sizes = self.seed_repository.get_validated_sizes()
-            users = self.seed_repository.get_validated_users()
-            
-            return {
-                "success": True,
-                "message": "All seed data validation passed",
-                "counts": {
-                    "styles": len(styles),
-                    "colors": len(colors),
-                    "sizes": len(sizes),
-                    "users": len(users)
-                }
-            }
-            
-        except ValueError as e:
-            return {
-                "success": False,
-                "message": f"Validation failed: {str(e)}",
-                "error": str(e),
-                "error_type": "validation"
-            }
-        except Exception as e:
-            return {
-                "success": False,
-                "message": f"Validation error: {str(e)}",
                 "error": str(e),
                 "error_type": "system"
             }

@@ -130,12 +130,6 @@ class ReportService:
     def _generate_anomaly_summary(self, anomaly_analysis: Dict[str, Any]) -> Dict[str, Any]:
         """
         Generate a concise summary of anomaly detection results.
-        
-        Args:
-            anomaly_analysis: Full anomaly analysis data
-            
-        Returns:
-            Dict containing key anomaly metrics
         """
         try:
             anomalies = anomaly_analysis.get("detected_anomalies", [])

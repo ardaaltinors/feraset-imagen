@@ -19,22 +19,6 @@ class GenerationController:
     def create_generation_request(self, req: https_fn.Request) -> https_fn.Response:
         """
         HTTP endpoint to create a new image generation request.
-        
-        Expected JSON payload:
-        {
-            "userId": "string",
-            "model": "Model A" | "Model B",
-            "style": "realistic" | "anime" | "oil painting" | "sketch" | "cyberpunk" | "watercolor",
-            "color": "vibrant" | "monochrome" | "pastel" | "neon" | "vintage",
-            "size": "512x512" | "1024x1024" | "1024x1792",
-            "prompt": "string"
-        }
-        
-        Args:
-            req: Firebase Functions HTTP request object
-            
-        Returns:
-            https_fn.Response: Generation result or error details
         """
         try:
             # Log request info
@@ -182,12 +166,6 @@ class GenerationController:
     def get_generation_request(self, req: https_fn.Request) -> https_fn.Response:
         """
         HTTP endpoint to get generation request details.
-        
-        Args:
-            req: Firebase Functions HTTP request object
-            
-        Returns:
-            https_fn.Response: Generation request details or error
         """
         try:
             self.logger.info(

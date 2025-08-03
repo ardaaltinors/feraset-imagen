@@ -21,13 +21,6 @@ class AnomalyDetectionService:
     ) -> Dict[str, Any]:
         """
         Detect anomalies in current week's data compared to historical patterns.
-        
-        Args:
-            current_stats: Current week's statistics
-            historical_data: Historical weekly reports for comparison
-            
-        Returns:
-            Dict containing anomaly detection results
         """
         try:
             anomalies = {

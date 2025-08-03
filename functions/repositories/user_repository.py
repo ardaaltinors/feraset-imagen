@@ -16,30 +16,18 @@ class UserRepository(BaseRepository):
     def get_user_by_id(self, user_id: str) -> Optional[Dict[str, Any]]:
         """
         Get user by ID.
-        
-        Args:
-            user_id: The user's unique identifier
-            
-        Returns:
-            User data or None if not found
         """
         return self.get(user_id)
     
     def get_user_transactions(self, user_id: str) -> List[Dict[str, Any]]:
         """
         Get all transactions for a user.
-        
-        Args:
-            user_id: The user's unique identifier
-            
-        Returns:
-            List of transaction dictionaries
         """
         transactions_collection = self.db.collection(
             Config.get_collection_name("users")
         ).document(user_id).collection("transactions")
         
-        # Order by timestamp descending (newest first)
+        # Order by timestamp desc
         docs = transactions_collection.order_by("timestamp", direction="DESCENDING").stream()
         
         transactions = []
@@ -52,13 +40,7 @@ class UserRepository(BaseRepository):
     
     def get_user_credits_with_transactions(self, user_id: str) -> Optional[UserCreditsResponse]:
         """
-        Get user's current credits along with transaction history.
-        
-        Args:
-            user_id: The user's unique identifier
-            
-        Returns:
-            UserCreditsResponse object or None if user not found
+        Get user's current credits and transaction history.
         """
         # Get user data
         user_data = self.get_user_by_id(user_id)
@@ -77,7 +59,6 @@ class UserRepository(BaseRepository):
                 transaction_model = TransactionModel(**transaction_data)
                 validated_transactions.append(transaction_model)
             except Exception as e:
-                # Log invalid transaction but continue
                 print(f"Invalid transaction data for user {user_id}: {e}")
                 continue
         
@@ -93,13 +74,6 @@ class UserRepository(BaseRepository):
     ) -> bool:
         """
         Create a new transaction for a user.
-        
-        Args:
-            user_id: The user's unique identifier
-            transaction_data: Transaction data to insert
-            
-        Returns:
-            True if successful, False otherwise
         """
         try:
             transaction_id = transaction_data.get("id")
@@ -118,13 +92,6 @@ class UserRepository(BaseRepository):
     def update_user_credits(self, user_id: str, new_credits: int) -> bool:
         """
         Update user's current credits.
-        
-        Args:
-            user_id: The user's unique identifier
-            new_credits: New credit amount
-            
-        Returns:
-            True if successful, False otherwise
         """
         try:
             self.update(user_id, {

@@ -60,15 +60,6 @@ class TaskQueueService:
     ) -> bool:
         """
         Enqueue an image generation task to Cloud Tasks.
-        
-        Args:
-            generation_request_id: Unique generation request ID
-            task_payload: Task data to process
-            priority: Task priority level
-            delay_seconds: Delay before processing starts
-            
-        Returns:
-            True if task was successfully enqueued
         """
         if not CLOUD_TASKS_AVAILABLE or not self.client:
             # Fallback for emulator - simulate immediate processing
@@ -111,9 +102,6 @@ class TaskQueueService:
     def get_queue_stats(self) -> Dict[str, Any]:
         """
         Get current queue statistics.
-        
-        Returns:
-            Dict containing queue metrics
         """
         if not CLOUD_TASKS_AVAILABLE or not self.client:
             return {
@@ -148,34 +136,8 @@ class TaskQueueService:
             self.logger.error(f"Failed to get queue stats: {str(e)}")
             return {"error": str(e)}
     
-    def cancel_task(self, generation_request_id: str) -> bool:
-        """
-        Cancel a queued task.
-        
-        Note: Since we're using auto-generated task names, cancellation by generation_request_id
-        is not directly supported. This method is kept for interface compatibility.
-        
-        Args:
-            generation_request_id: Generation request ID to cancel
-            
-        Returns:
-            True if task was successfully cancelled
-        """
-        if not CLOUD_TASKS_AVAILABLE or not self.client:
-            self.logger.info(f"Emulator mode: Cannot cancel task {generation_request_id}")
-            return True  # Return True since emulator processes immediately
-        
-        self.logger.warning(f"Task cancellation not supported with auto-generated names for {generation_request_id}")
-        return False  # Cannot cancel without knowing the auto-generated task name
-    
     def _get_worker_function_url(self) -> str:
-        """Get the URL for the worker function."""
-        # In production, this would be the deployed Cloud Function URL
-        # For emulator, use local URL
-        if Config.PROJECT_ID == "demo-project":  # Emulator
-            return "http://127.0.0.1:5551/feraset-imagen/us-central1/processImageGeneration"
-        else:
-            return f"https://us-central1-{Config.PROJECT_ID}.cloudfunctions.net/processImageGeneration"
+        return Config.get_worker_function_url("processImageGeneration")
     
     def _generate_task_name(self, generation_request_id: str) -> str:
         """Generate a unique task name."""
@@ -185,12 +147,6 @@ class TaskQueueService:
     def estimate_completion_time(self, queue_position: int = None) -> Optional[datetime]:
         """
         Estimate when a task will complete based on queue position.
-        
-        Args:
-            queue_position: Position in queue (if known)
-            
-        Returns:
-            Estimated completion datetime
         """
         try:
             # Base processing time per task (estimate)

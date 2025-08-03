@@ -9,6 +9,7 @@ class Config:
     
     # Firebase settings
     PROJECT_ID = "feraset-imagen"
+    REGION = "us-central1"
     
     # Firestore collections
     COLLECTIONS = {
@@ -42,11 +43,21 @@ class Config:
     
     # Generation processing settings
     GENERATION_CONFIG = {
-        "timeout_seconds": 300,  # 5 minutes for GPU processing
+        "timeout_seconds": 180,  # 3 min
         "max_queue_size": 1000,
         "priority_levels": ["low", "normal", "high"],
         "default_priority": "normal"
     }
+    
+    # Worker function URLs
+    @classmethod
+    def get_worker_function_url(cls, function_name: str = "processImageGeneration") -> str:
+        """Get worker function URL based on environment."""
+        if cls.PROJECT_ID == "demo-project":  # Emulator
+            return f"http://127.0.0.1:5551/feraset-imagen/us-central1/{function_name}"
+        else:  # Production
+            return f"https://{cls.REGION}-{cls.PROJECT_ID}.cloudfunctions.net/{function_name}"
+    
     
     # Anomaly detection thresholds
     ANOMALY_DETECTION = {

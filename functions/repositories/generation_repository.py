@@ -21,13 +21,7 @@ class GenerationRepository(BaseRepository):
         generation_data: Dict[str, Any]
     ) -> Optional[str]:
         """
-        Create a new generation request.
-        
-        Args:
-            generation_data: Generation request data
-            
-        Returns:
-            Generation request ID if successful, None otherwise
+        Create a new image generation request.
         """
         try:
             generation_id = str(uuid.uuid4())
@@ -47,13 +41,6 @@ class GenerationRepository(BaseRepository):
     ) -> bool:
         """
         Update a generation request.
-        
-        Args:
-            generation_id: Generation request ID
-            update_data: Data to update
-            
-        Returns:
-            True if successful, False otherwise
         """
         try:
             update_data["updated_at"] = datetime.now()
@@ -65,14 +52,9 @@ class GenerationRepository(BaseRepository):
     def get_generation_request(self, generation_id: str) -> Optional[Dict[str, Any]]:
         """
         Get generation request by ID.
-        
-        Args:
-            generation_id: Generation request ID
-            
-        Returns:
-            Generation request data or None if not found
         """
         return self.get(generation_id)
+    
     
     def atomic_credit_deduction_and_request_creation(
         self,
@@ -83,17 +65,7 @@ class GenerationRepository(BaseRepository):
         transaction_data: Dict[str, Any]
     ) -> Dict[str, Any]:
         """
-        Atomically deduct credits and create generation request.
-        
-        Args:
-            user_id: User ID
-            current_credits: Current user credits
-            credit_cost: Credits to deduct
-            generation_data: Generation request data
-            transaction_data: Transaction data
-            
-        Returns:
-            Dict with success status and generation request ID
+        Deduct credits and create generation request.
         """
         try:
             generation_id = str(uuid.uuid4())
@@ -109,7 +81,7 @@ class GenerationRepository(BaseRepository):
             # Use Firestore batch for atomic operations
             batch = self.db.batch()
             
-            # First verify user exists and has sufficient credits
+            # Verify user exists and has sufficient credits
             user_doc = user_ref.get()
             if not user_doc.exists:
                 raise ValueError("User not found")
@@ -175,16 +147,7 @@ class GenerationRepository(BaseRepository):
         error_message: str
     ) -> Dict[str, Any]:
         """
-        Atomically refund credits and update generation request status.
-        
-        Args:
-            user_id: User ID
-            generation_id: Generation request ID
-            credit_amount: Credits to refund
-            error_message: Error message for the generation failure
-            
-        Returns:
-            Dict with success status
+        Refund credits and update generation request status.
         """
         try:
             refund_transaction_id = str(uuid.uuid4())
@@ -259,13 +222,6 @@ class GenerationRepository(BaseRepository):
     ) -> bool:
         """
         Mark generation request as completed with image URL.
-        
-        Args:
-            generation_id: Generation request ID
-            image_url: Generated image URL
-            
-        Returns:
-            True if successful, False otherwise
         """
         try:
             update_data = {
@@ -285,13 +241,6 @@ class GenerationRepository(BaseRepository):
     ) -> List[Dict[str, Any]]:
         """
         Get generation requests for a user.
-        
-        Args:
-            user_id: User ID
-            limit: Maximum number of requests to return
-            
-        Returns:
-            List of generation request dictionaries
         """
         try:
             docs = (

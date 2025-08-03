@@ -17,12 +17,6 @@ class UserController:
     def get_user_credits(self, req: https_fn.Request) -> https_fn.Response:
         """
         HTTP endpoint to get user's current credits and transaction history.
-        
-        Args:
-            req: Firebase Functions HTTP request object
-            
-        Returns:
-            https_fn.Response: User credits data or error details
         """
         try:
             # Log request info
@@ -108,12 +102,6 @@ class UserController:
     def validate_user(self, req: https_fn.Request) -> https_fn.Response:
         """
         HTTP endpoint to validate if a user exists.
-        
-        Args:
-            req: Firebase Functions HTTP request object
-            
-        Returns:
-            https_fn.Response: User validation results
         """
         try:
             self.logger.info(

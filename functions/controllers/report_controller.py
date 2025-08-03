@@ -19,13 +19,6 @@ class ReportController:
         Generate weekly usage and credit consumption report.
         
         This endpoint is designed to be triggered by a scheduler.
-        No input parameters required.
-        
-        Args:
-            req: HTTP request object
-            
-        Returns:
-            https_fn.Response: JSON response with report status
         """
         try:
             self.logger.info("Processing scheduled weekly report request")

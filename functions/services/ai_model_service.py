@@ -14,9 +14,6 @@ class AIModelService:
     def __init__(self, failure_rate: float = 0.05):
         """
         Initialize AI model service.
-        
-        Args:
-            failure_rate: Probability of generation failure (default 5%)
         """
         self.failure_rate = failure_rate
         self.logger = logging.getLogger(__name__)
@@ -32,17 +29,6 @@ class AIModelService:
     ) -> Dict[str, Any]:
         """
         Simulate AI image generation with configurable failure rate.
-        
-        Args:
-            model: AI model to use (Model A or Model B)
-            style: Image style (realistic, anime, etc.)
-            color: Color palette (vibrant, monochrome, etc.)
-            size: Image dimensions (512x512, 1024x1024, etc.)
-            prompt: Text prompt for generation
-            generation_request_id: Unique request identifier
-            
-        Returns:
-            Dict containing success status, image URL, or error details
         """
         try:
             self.logger.info(
@@ -117,16 +103,6 @@ class AIModelService:
     ) -> str:
         """
         Generate a unique placeholder image URL for the model.
-        
-        Args:
-            model: AI model used
-            style: Image style
-            color: Color palette  
-            size: Image dimensions
-            generation_request_id: Unique request identifier
-            
-        Returns:
-            Placeholder image URL unique to the model
         """
         # Create model-specific placeholder URLs
         if model == AIModel.MODEL_A:
@@ -154,14 +130,6 @@ class AIModelService:
     ) -> Dict[str, Any]:
         """
         Validate generation parameters against allowed values.
-        
-        Args:
-            style: Image style
-            color: Color palette
-            size: Image dimensions
-            
-        Returns:
-            Dict containing validation results
         """
         # Valid options from case study requirements
         valid_styles = {
@@ -198,12 +166,6 @@ class AIModelService:
     def get_credit_cost(self, size: str) -> int:
         """
         Get credit cost based on image size.
-        
-        Args:
-            size: Image dimensions
-            
-        Returns:
-            Credit cost for the size
         """
         size_costs = {
             "512x512": 1,

@@ -17,12 +17,6 @@ class UserService:
     def get_user_credits(self, user_id: str) -> Dict[str, Any]:
         """
         Get user's current credits and transaction history.
-        
-        Args:
-            user_id: The user's unique identifier
-            
-        Returns:
-            Dict containing success status, user credits data, or error details
         """
         try:
             # Validate input
@@ -77,12 +71,6 @@ class UserService:
     def validate_user_exists(self, user_id: str) -> Dict[str, Any]:
         """
         Validate that a user exists in the system.
-        
-        Args:
-            user_id: The user's unique identifier
-            
-        Returns:
-            Dict containing validation results
         """
         try:
             if not user_id or not user_id.strip():
