@@ -166,7 +166,6 @@ class CreateGenerationResponseModel(BaseModel):
     generationRequestId: str = Field(..., min_length=1)
     status: GenerationStatus = GenerationStatus.QUEUED
     deductedCredits: int = Field(..., ge=0)
-    estimatedCompletionTime: Optional[datetime] = None
     queuePosition: Optional[int] = None
 
     class Config:
@@ -185,7 +184,6 @@ class GenerationStatusResponseModel(BaseModel):
     created_at: datetime
     updated_at: datetime
     completed_at: Optional[datetime] = None
-    estimated_completion_time: Optional[datetime] = None
     queue_position: Optional[int] = None
 
     class Config:

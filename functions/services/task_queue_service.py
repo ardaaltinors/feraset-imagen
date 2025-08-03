@@ -3,19 +3,10 @@
 import json
 import logging
 from datetime import datetime, timedelta
-from typing import Dict, Any, Optional
+from typing import Dict, Any
 from core import Config
-
-# Try to import Cloud Tasks, fallback to mock for emulator
-try:
-    from google.cloud import tasks_v2
-    from google.protobuf import timestamp_pb2
-    CLOUD_TASKS_AVAILABLE = True
-except ImportError:
-    # Fallback for development/emulator
-    CLOUD_TASKS_AVAILABLE = False
-    tasks_v2 = None
-    timestamp_pb2 = None
+from google.cloud import tasks_v2
+from google.protobuf import timestamp_pb2
 
 
 class TaskQueueService:
@@ -28,28 +19,25 @@ class TaskQueueService:
         self.location = "us-central1"  # Firebase Functions default region
         self.queue_name = "image-generation-queue"
         
-        # Check if we're in emulator mode (project_id is demo-project or no credentials)
-        is_emulator = (
-            self.project_id == "demo-project" or 
-            not self._has_credentials()
-        )
+        self.is_emulator = Config.is_emulator()
         
-        if CLOUD_TASKS_AVAILABLE and not is_emulator:
+        if self.is_emulator:
+            self.logger.info("Task queue service initialized for emulator mode (HTTP-based)")
+        else:
+            # prod configuration
             try:
+                self.logger.info("Initializing Cloud Tasks client for production")
                 self.client = tasks_v2.CloudTasksClient()
-                # Construct the fully qualified queue name
+                
                 self.parent = self.client.queue_path(
                     self.project_id, self.location, self.queue_name
                 )
-                self.logger.info("Cloud Tasks client initialized successfully")
+                self.logger.info(f"Cloud Tasks client initialized for production, queue path: {self.parent}")
+                
             except Exception as e:
-                self.logger.warning(f"Cloud Tasks initialization failed: {str(e)}, using fallback mode")
+                self.logger.error(f"Cloud Tasks initialization failed: {str(e)}", exc_info=True)
                 self.client = None
                 self.parent = None
-        else:
-            self.logger.warning("Using fallback mode for emulator or missing credentials")
-            self.client = None
-            self.parent = None
     
     def enqueue_generation_task(
         self, 
@@ -61,13 +49,15 @@ class TaskQueueService:
         """
         Enqueue an image generation task to Cloud Tasks.
         """
-        if not CLOUD_TASKS_AVAILABLE or not self.client:
-            # Fallback for emulator - simulate immediate processing
-            self.logger.info(f"Emulator mode: Simulating task queue for generation {generation_request_id}")
-            return self._simulate_emulator_task(generation_request_id, task_payload)
+        if self.is_emulator:
+            # In emulator mode, directly call the worker function via HTTP
+            return self._enqueue_emulator_task(generation_request_id, task_payload, delay_seconds)
+        
+        if not self.client:
+            self.logger.error(f"Cloud Tasks client not available for generation {generation_request_id}")
+            return False
         
         try:
-            # Create the task
             task = {
                 "http_request": {
                     "http_method": tasks_v2.HttpMethod.POST,
@@ -91,7 +81,7 @@ class TaskQueueService:
                 request={"parent": self.parent, "task": task}
             )
             
-            self.logger.info(f"Task {response.name} enqueued for generation {generation_request_id}")
+            self.logger.info(f"Task {response.name} enqueued for generation {generation_request_id} (production)")
             return True
             
         except Exception as e:
@@ -103,10 +93,11 @@ class TaskQueueService:
         """
         Get current queue statistics.
         """
-        if not CLOUD_TASKS_AVAILABLE or not self.client:
+        if not self.client:
             return {
                 "queue_name": self.queue_name,
-                "state": "EMULATOR_MODE",
+                "state": "CLIENT_UNAVAILABLE",
+                "mode": "emulator" if self.is_emulator else "production",
                 "retry_config": Config.TASK_QUEUE_CONFIG["retry_config"],
                 "rate_limits": Config.TASK_QUEUE_CONFIG["rate_limits"]
             }
@@ -119,6 +110,7 @@ class TaskQueueService:
             stats = {
                 "queue_name": self.queue_name,
                 "state": queue.state.name if queue.state else "UNKNOWN",
+                "mode": "emulator" if self.is_emulator else "production",
                 "retry_config": {
                     "max_attempts": queue.retry_config.max_attempts if queue.retry_config else None,
                     "min_backoff": queue.retry_config.min_backoff.seconds if queue.retry_config and queue.retry_config.min_backoff else None,
@@ -139,56 +131,51 @@ class TaskQueueService:
     def _get_worker_function_url(self) -> str:
         return Config.get_worker_function_url("processImageGeneration")
     
-    def _generate_task_name(self, generation_request_id: str) -> str:
-        """Generate a unique task name."""
-        # Task names must be unique and URL-safe
-        return f"generation-task-{generation_request_id.replace('_', '-')}"
     
-    def estimate_completion_time(self, queue_position: int = None) -> Optional[datetime]:
-        """
-        Estimate when a task will complete based on queue position.
-        """
-        try:
-            # Base processing time per task (estimate)
-            avg_processing_time_seconds = 60  # 1 minute average
-            
-            # If queue position is known, calculate based on position
-            if queue_position is not None:
-                estimated_seconds = queue_position * avg_processing_time_seconds
-            else:
-                # Default estimate if position unknown
-                estimated_seconds = avg_processing_time_seconds * 2
-            
-            return datetime.now() + timedelta(seconds=estimated_seconds)
-            
-        except Exception:
-            return None
     
-    def _simulate_emulator_task(self, generation_request_id: str, task_payload: Dict[str, Any]) -> bool:
+    def _enqueue_emulator_task(self, generation_request_id: str, task_payload: Dict[str, Any], delay_seconds: int) -> bool:
         """
-        Simulate task processing in emulator mode.
+        Enqueue task in emulator mode by directly calling the worker function.
         
-        In emulator mode, we can't use Cloud Tasks, so we just log the task
-        and return True to simulate successful queueing. The actual processing
-        would be handled by the background worker endpoint.
+        In Firebase emulator, task queue functions are exposed as HTTP endpoints.
         """
         try:
-            self.logger.info(f"Emulator mode: Task queued for generation {generation_request_id}")
-            self.logger.info(f"Task payload: {json.dumps(task_payload, indent=2)}")
+            import requests
+            import threading
+            import time
             
-            # In emulator mode, we simulate successful queueing
-            # The actual processing would be handled by calling the processImageGeneration endpoint
-            return True
+            # Get the worker function URL
+            url = self._get_worker_function_url()
+            
+            def execute_task():
+                """Execute the task after delay."""
+                if delay_seconds > 0:
+                    time.sleep(delay_seconds)
                 
+                try:
+                    response = requests.post(
+                        url,
+                        json=task_payload,
+                        headers={"Content-Type": "application/json"},
+                        timeout=30
+                    )
+                    
+                    if response.status_code == 200:
+                        self.logger.info(f"Emulator task completed for generation {generation_request_id}")
+                    else:
+                        self.logger.error(f"Emulator task failed for generation {generation_request_id}: {response.status_code}")
+                        
+                except Exception as e:
+                    self.logger.error(f"Error executing emulator task for generation {generation_request_id}: {str(e)}")
+            
+            # Execute task in background thread to simulate async behavior
+            thread = threading.Thread(target=execute_task, daemon=True)
+            thread.start()
+            
+            self.logger.info(f"Task enqueued for generation {generation_request_id} (emulator mode, delay: {delay_seconds}s)")
+            return True
+            
         except Exception as e:
-            self.logger.error(f"Emulator task simulation failed: {str(e)}")
+            self.logger.error(f"Failed to enqueue emulator task for generation {generation_request_id}: {str(e)}")
             return False
     
-    def _has_credentials(self) -> bool:
-        """Check if Google Cloud credentials are available."""
-        try:
-            import google.auth
-            google.auth.default()
-            return True
-        except Exception:
-            return False

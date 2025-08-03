@@ -114,9 +114,6 @@ class GenerationService:
                 {"status": GenerationStatus.QUEUED.value}
             )
             
-            # Step 7: Calculate estimated completion time
-            estimated_completion = self.task_queue_service.estimate_completion_time()
-            
             self.logger.info(
                 "Generation request %s queued successfully for user %s",
                 generation_id, request_data.userId
@@ -128,7 +125,6 @@ class GenerationService:
                     "generationRequestId": generation_id,
                     "status": GenerationStatus.QUEUED.value,
                     "deductedCredits": credit_cost,
-                    "estimatedCompletionTime": estimated_completion.isoformat() if estimated_completion else None,
                     "queuePosition": None  # Could be implemented with more complex queue tracking
                 },
                 "message": "Generation request queued successfully"
@@ -257,11 +253,6 @@ class GenerationService:
             # Calculate progress based on status
             progress = self._calculate_progress(request_data.get("status"))
             
-            # Get estimated completion time if still processing
-            estimated_completion = None
-            if request_data.get("status") in [GenerationStatus.QUEUED.value, GenerationStatus.PROCESSING.value]:
-                estimated_completion = self.task_queue_service.estimate_completion_time()
-            
             status_response = GenerationStatusResponseModel(
                 generationRequestId=generation_id,
                 status=request_data.get("status", GenerationStatus.PENDING.value),
@@ -270,8 +261,7 @@ class GenerationService:
                 progress=progress,
                 created_at=request_data.get("created_at"),
                 updated_at=request_data.get("updated_at"),
-                completed_at=request_data.get("completed_at"),
-                estimated_completion_time=estimated_completion
+                completed_at=request_data.get("completed_at")
             )
             
             return {

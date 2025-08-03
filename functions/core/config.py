@@ -51,9 +51,14 @@ class Config:
     
     # Worker function URLs
     @classmethod
+    def is_emulator(cls) -> bool:
+        """Check if running in emulator environment."""
+        return cls.PROJECT_ID == "demo-project"
+    
+    @classmethod
     def get_worker_function_url(cls, function_name: str = "processImageGeneration") -> str:
         """Get worker function URL based on environment."""
-        if cls.PROJECT_ID == "demo-project":  # Emulator
+        if cls.is_emulator():  # Emulator
             return f"http://127.0.0.1:5551/feraset-imagen/us-central1/{function_name}"
         else:  # Production
             return f"https://{cls.REGION}-{cls.PROJECT_ID}.cloudfunctions.net/{function_name}"

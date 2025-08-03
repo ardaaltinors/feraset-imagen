@@ -111,7 +111,6 @@ class GenerationController:
                         "generationRequestId": response_data["generationRequestId"],
                         "status": response_data["status"],
                         "deductedCredits": response_data["deductedCredits"],
-                        "estimatedCompletionTime": response_data.get("estimatedCompletionTime"),
                         "queuePosition": response_data.get("queuePosition")
                     }, default=str),
                     status=202,  # Accepted - request queued for processing

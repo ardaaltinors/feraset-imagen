@@ -48,7 +48,6 @@ class TestCreditWorkflowIntegration:
         
         mock_task_queue = Mock()
         mock_task_queue.enqueue_generation_task.return_value = True
-        mock_task_queue.estimate_completion_time.return_value = datetime.now()
         mock_task_queue_class.return_value = mock_task_queue
         
         # Create service and request
