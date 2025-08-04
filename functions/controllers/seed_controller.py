@@ -3,6 +3,7 @@
 from firebase_functions import https_fn
 from services import SeedService
 import logging
+import json
 
 
 class SeedController:
@@ -29,8 +30,9 @@ class SeedController:
             
             if result.get("success"):
                 return https_fn.Response(
-                    result.get("message", "Database seeded successfully"),
-                    status=200
+                    json.dumps(result),
+                    status=200,
+                    headers={"Content-Type": "application/json"}
                 )
             else:
                 # Determine appropriate HTTP status code
@@ -38,15 +40,25 @@ class SeedController:
                 status_code = 400 if error_type == "validation" else 500
                 
                 return https_fn.Response(
-                    result.get("message", "Seeding failed"),
-                    status=status_code
+                    json.dumps({
+                        "error": result.get("message", "Seeding failed"),
+                        "error_type": error_type,
+                        "success": False
+                    }),
+                    status=status_code,
+                    headers={"Content-Type": "application/json"}
                 )
                 
         except Exception as e:
             # Catch any unexpected controller-level errors
             self.logger.error("Controller error in seed_database: %s", str(e))
             return https_fn.Response(
-                f"Controller error: {str(e)}",
-                status=500
+                json.dumps({
+                    "error": f"Controller error: {str(e)}",
+                    "error_type": "system",
+                    "success": False
+                }),
+                status=500,
+                headers={"Content-Type": "application/json"}
             )
             

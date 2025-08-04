@@ -131,7 +131,7 @@ class SeedRepository(BaseRepository):
             ("arda", {
                 "name": "Arda Altinors",
                 "email": "arda@altinors.com", 
-                "current_credits": 25,
+                "current_credits": 500,
                 "total_images_generated": 47,
                 "created_at": current_time - timedelta(days=25),
                 "updated_at": current_time - timedelta(hours=2),
@@ -140,7 +140,7 @@ class SeedRepository(BaseRepository):
             ("havanur", {
                 "name": "Havanur Koc",
                 "email": "havanur@example.com",
-                "current_credits": 15,
+                "current_credits": 5,
                 "total_images_generated": 23,
                 "created_at": current_time - timedelta(days=20),
                 "updated_at": current_time - timedelta(days=1),

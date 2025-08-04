@@ -1,11 +1,601 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <meta charset="utf-8">
-    <title>Feraset API</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Feraset AI Image Generation - Demo UI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#eff6ff',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+    </style>
 </head>
-<body>
-    <h1>Feraset Image Generation API</h1>
-    <p>API is running. Use the documented endpoints.</p>
+<body class="bg-gray-50 dark:bg-gray-900 transition-colors">
+    <div id="app">
+        <!-- Header -->
+        <div class="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between items-center py-4">
+                    <div class="flex items-center space-x-4">
+                        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">
+                            Feraset AI Image Generation
+                        </h1>
+                        <div class="flex items-center space-x-3">
+                            <!-- Postman Link -->
+                            <a 
+                                href="https://www.postman.com/altinors/feraset-imagen/collection/1rwqfmm/feraset-imagen-api-collection?action=share&creator=42658830&active-environment=42658830-a4aef782-ba47-4189-be24-62a4d91f03eb" 
+                                target="_blank"
+                                class="px-3 py-1 text-sm font-medium text-orange-600 hover:text-orange-800 dark:text-orange-400 dark:hover:text-orange-300 bg-orange-50 hover:bg-orange-100 dark:bg-orange-900/20 dark:hover:bg-orange-900/30 rounded-full transition-colors"
+                                title="View Postman Collection"
+                            >
+                                Postman Collection
+                            </a>
+                            
+                            <!-- GitHub Link -->
+                            <a 
+                                href="https://github.com/ardaaltinors/feraset-imagen" 
+                                target="_blank"
+                                class="flex items-center text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white transition-colors"
+                                title="View on GitHub"
+                            >
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                                </svg>
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center space-x-4">
+                        <!-- Environment Toggle -->
+                        <div class="flex items-center space-x-2">
+                            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Environment:</span>
+                            <select 
+                                id="environment-select"
+                                class="appearance-none bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                            >
+                                <option value="localhost">Localhost</option>
+                                <option value="production" selected>Production</option>
+                            </select>
+                            <div id="env-indicator" class="w-2 h-2 rounded-full bg-green-500"></div>
+                        </div>
+
+                        <!-- Dark Mode Toggle -->
+                        <button
+                            id="dark-mode-toggle"
+                            class="p-2 rounded-md text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+                        >
+                            🌙
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <!-- Left Column - User & Admin -->
+                <div class="space-y-8">
+                    <!-- User Panel -->
+                    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+                        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">User Management</h3>
+                        
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    Select User
+                                </label>
+                                <select
+                                    id="user-select"
+                                    class="w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                                >
+                                    <option value="arda">arda</option>
+                                    <option value="havanur">havanur</option>
+                                </select>
+                            </div>
+
+                            <!-- Credits Display -->
+                            <div id="credits-display" class="bg-gray-50 dark:bg-gray-700 rounded-md p-4">
+                                <div class="flex justify-between items-center mb-2">
+                                    <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Current Credits</span>
+                                    <span id="current-credits" class="text-2xl font-bold text-primary-600 dark:text-primary-400">
+                                        --
+                                    </span>
+                                </div>
+                                <div class="text-xs text-gray-500 dark:text-gray-400">
+                                    Total transactions: <span id="total-credits">--</span>
+                                </div>
+                            </div>
+
+                            <!-- Error Display -->
+                            <div id="user-error" class="hidden bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md p-3">
+                                <p class="text-sm text-red-700 dark:text-red-400"></p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Admin Panel -->
+                    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+                        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Admin Functions</h3>
+                        
+                        <div class="space-y-4">
+                            <button
+                                id="seed-btn"
+                                class="w-full bg-green-500 hover:bg-green-600 disabled:bg-gray-400 text-white font-medium py-2 px-4 rounded-md transition-colors"
+                            >
+                                Seed Database
+                            </button>
+
+                            <div id="seed-result" class="hidden rounded-md p-3">
+                                <p class="text-sm"></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Middle Column - Generation Form -->
+                <div class="space-y-8">
+                    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+                        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Generate Image</h3>
+                        
+                        <form id="generation-form" class="space-y-4">
+                            <!-- Model Selection -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    AI Model
+                                </label>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <button
+                                        type="button"
+                                        data-model="Model A"
+                                        class="model-btn p-2 text-sm rounded-md border transition-colors bg-primary-500 text-white border-primary-500"
+                                    >
+                                        Model A
+                                    </button>
+                                    <button
+                                        type="button"
+                                        data-model="Model B"
+                                        class="model-btn p-2 text-sm rounded-md border transition-colors bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600"
+                                    >
+                                        Model B
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Style Selection -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    Style
+                                </label>
+                                <select
+                                    id="style-select"
+                                    class="w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                                >
+                                    <option value="realistic">realistic</option>
+                                    <option value="anime">anime</option>
+                                </select>
+                            </div>
+
+                            <!-- Color Selection -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    Color Palette
+                                </label>
+                                <select
+                                    id="color-select"
+                                    class="w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                                >
+                                    <option value="vibrant">vibrant</option>
+                                    <option value="pastel">pastel</option>
+                                    <option value="warm">warm</option>
+                                    <option value="cool">cool</option>
+                                    <option value="monochrome">monochrome</option>
+                                </select>
+                            </div>
+
+                            <!-- Size Selection -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    Image Size
+                                </label>
+                                <select
+                                    id="size-select"
+                                    class="w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                                >
+                                    <option value="512x512">512x512 (1 credit)</option>
+                                    <option value="1024x1024">1024x1024 (3 credits)</option>
+                                    <option value="1024x1792">1024x1792 (4 credits)</option>
+                                </select>
+                                <p id="credit-cost" class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                    This will cost 1 credit
+                                </p>
+                            </div>
+
+                            <!-- Prompt -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    Prompt
+                                </label>
+                                <textarea
+                                    id="prompt-input"
+                                    placeholder="Describe the image you want to generate..."
+                                    rows="3"
+                                    class="w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                                    required
+                                ></textarea>
+                            </div>
+
+                            <!-- Submit Button -->
+                            <button
+                                type="submit"
+                                id="generate-btn"
+                                class="w-full bg-primary-500 hover:bg-primary-600 disabled:bg-gray-400 text-white font-medium py-2 px-4 rounded-md transition-colors"
+                            >
+                                Generate Image
+                            </button>
+
+                            <!-- Error Display -->
+                            <div id="form-error" class="hidden bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md p-3">
+                                <p class="text-sm text-red-700 dark:text-red-400"></p>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Right Column - Generation Tracker -->
+                <div>
+                    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+                        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Generation Requests</h3>
+                        
+                        <div id="generation-list">
+                            <p class="text-gray-500 dark:text-gray-400 text-center py-8">
+                                No generation requests yet. Create one to get started!
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global state
+        let currentEnvironment = 'production';
+        let currentUser = 'arda';
+        let selectedModel = 'Model A';
+        let generationRequests = [];
+        let isDarkMode = false;
+
+        // API Configuration
+        const apiUrls = {
+            localhost: 'http://127.0.0.1:5551/feraset-imagen/us-central1',
+            production: 'https://feraset-api.altinors.com/api'
+        };
+
+        const getApiUrl = () => apiUrls[currentEnvironment];
+
+        // Size credits mapping
+        const sizeCredits = {
+            '512x512': 1,
+            '1024x1024': 3,
+            '1024x1792': 4
+        };
+
+        // Utility functions
+        function showElement(element) {
+            element.classList.remove('hidden');
+        }
+
+        function hideElement(element) {
+            element.classList.add('hidden');
+        }
+
+        function showError(elementId, message) {
+            const errorEl = document.getElementById(elementId);
+            errorEl.querySelector('p').textContent = message;
+            showElement(errorEl);
+        }
+
+        function hideError(elementId) {
+            hideElement(document.getElementById(elementId));
+        }
+
+        // API Functions
+        async function apiCall(endpoint, options = {}) {
+            const baseUrl = getApiUrl();
+            // Clean up endpoint to avoid double slashes
+            const cleanEndpoint = endpoint.replace(/^\/+/, '').replace('/api/', '');
+            const url = currentEnvironment === 'localhost' 
+                ? `${baseUrl}/${cleanEndpoint}`
+                : `${baseUrl}/${cleanEndpoint}`;
+            
+            try {
+                const response = await fetch(url, {
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...options.headers
+                    },
+                    mode: currentEnvironment === 'localhost' ? 'cors' : 'cors',
+                    ...options
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                return await response.json();
+            } catch (error) {
+                console.error('API call failed:', error);
+                if (error.message.includes('CORS') || error.message.includes('Failed to fetch')) {
+                    throw new Error(`CORS Error: Cannot connect to ${currentEnvironment} API. ${currentEnvironment === 'localhost' ? 'Make sure Firebase emulator is running and CORS is configured.' : 'Check network connection.'}`);
+                }
+                throw error;
+            }
+        }
+
+        async function getUserCredits(userId) {
+            try {
+                const data = await apiCall(`/getUserCredits?userId=${userId}`);
+                document.getElementById('current-credits').textContent = data.currentCredits;
+                document.getElementById('total-credits').textContent = data.transactions?.length || 0;
+                hideError('user-error');
+                return data;
+            } catch (error) {
+                document.getElementById('current-credits').textContent = '--';
+                document.getElementById('total-credits').textContent = '--';
+                showError('user-error', error.message);
+                throw error;
+            }
+        }
+
+        async function createGenerationRequest(formData) {
+            return await apiCall('/createGenerationRequest', {
+                method: 'POST',
+                body: JSON.stringify(formData)
+            });
+        }
+
+        async function getGenerationStatus(requestId) {
+            return await apiCall(`/getGenerationStatus?generationRequestId=${requestId}`);
+        }
+
+        async function seedDatabase() {
+            return await apiCall('/seed_database', { method: 'POST' });
+        }
+
+        // UI Event Handlers
+        function initializeEventListeners() {
+            // Environment selector
+            document.getElementById('environment-select').addEventListener('change', (e) => {
+                currentEnvironment = e.target.value;
+                const indicator = document.getElementById('env-indicator');
+                indicator.className = `w-2 h-2 rounded-full ${currentEnvironment === 'localhost' ? 'bg-yellow-500' : 'bg-green-500'}`;
+                getUserCredits(currentUser);
+            });
+
+            // Dark mode toggle
+            document.getElementById('dark-mode-toggle').addEventListener('click', () => {
+                isDarkMode = !isDarkMode;
+                document.documentElement.classList.toggle('dark');
+                document.getElementById('dark-mode-toggle').textContent = isDarkMode ? '☀️' : '🌙';
+            });
+
+            // User selector
+            document.getElementById('user-select').addEventListener('change', (e) => {
+                currentUser = e.target.value;
+                getUserCredits(currentUser);
+            });
+
+            // Model selection
+            document.querySelectorAll('.model-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    selectedModel = e.target.dataset.model;
+                    document.querySelectorAll('.model-btn').forEach(b => {
+                        b.className = 'model-btn p-2 text-sm rounded-md border transition-colors bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600';
+                    });
+                    e.target.className = 'model-btn p-2 text-sm rounded-md border transition-colors bg-primary-500 text-white border-primary-500';
+                });
+            });
+
+            // Size selection credit cost update
+            document.getElementById('size-select').addEventListener('change', (e) => {
+                const credits = sizeCredits[e.target.value];
+                document.getElementById('credit-cost').textContent = 
+                    `This will cost ${credits} credit${credits > 1 ? 's' : ''}`;
+            });
+
+            // Generation form submission
+            document.getElementById('generation-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                
+                const formData = {
+                    userId: document.getElementById('user-select').value,
+                    model: selectedModel,
+                    style: document.getElementById('style-select').value,
+                    color: document.getElementById('color-select').value,
+                    size: document.getElementById('size-select').value,
+                    prompt: document.getElementById('prompt-input').value.trim()
+                };
+
+                if (!formData.prompt) return;
+
+                const generateBtn = document.getElementById('generate-btn');
+                generateBtn.disabled = true;
+                generateBtn.textContent = 'Generating...';
+                hideError('form-error');
+
+                try {
+                    const response = await createGenerationRequest(formData);
+                    
+                    // Add to generation requests
+                    generationRequests.push({
+                        ...response,
+                        formData: formData,
+                        timestamp: new Date().toISOString()
+                    });
+
+                    // Update UI
+                    updateGenerationList();
+                    document.getElementById('prompt-input').value = '';
+                    getUserCredits(currentUser); // Refresh credits
+                } catch (error) {
+                    showError('form-error', error.message);
+                } finally {
+                    generateBtn.disabled = false;
+                    generateBtn.textContent = 'Generate Image';
+                }
+            });
+
+            // Seed database
+            document.getElementById('seed-btn').addEventListener('click', async () => {
+                const btn = document.getElementById('seed-btn');
+                const resultEl = document.getElementById('seed-result');
+                
+                btn.disabled = true;
+                btn.textContent = 'Seeding Database...';
+                hideElement(resultEl);
+
+                try {
+                    const result = await seedDatabase();
+                    resultEl.className = 'rounded-md p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800';
+                    resultEl.querySelector('p').className = 'text-sm text-green-700 dark:text-green-400';
+                    resultEl.querySelector('p').textContent = 'Database seeded successfully!';
+                    showElement(resultEl);
+                    getUserCredits(currentUser); // Refresh credits
+                } catch (error) {
+                    resultEl.className = 'rounded-md p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800';
+                    resultEl.querySelector('p').className = 'text-sm text-red-700 dark:text-red-400';
+                    resultEl.querySelector('p').textContent = `Error: ${error.message}`;
+                    showElement(resultEl);
+                } finally {
+                    btn.disabled = false;
+                    btn.textContent = 'Seed Database';
+                }
+            });
+        }
+
+        function updateGenerationList() {
+            const listEl = document.getElementById('generation-list');
+            
+            if (generationRequests.length === 0) {
+                listEl.innerHTML = `
+                    <p class="text-gray-500 dark:text-gray-400 text-center py-8">
+                        No generation requests yet. Create one to get started!
+                    </p>
+                `;
+                return;
+            }
+
+            listEl.innerHTML = generationRequests.slice().reverse().map(request => {
+                const statusClass = 
+                    request.status === 'completed' ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400' :
+                    request.status === 'failed' ? 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400' :
+                    request.status === 'processing' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400' :
+                    'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
+                
+                const progressBar = request.progress ? `
+                    <div class="mb-2">
+                        <div class="flex justify-between text-sm text-gray-600 dark:text-gray-400 mb-1">
+                            <span>Progress</span>
+                            <span>${request.progress}%</span>
+                        </div>
+                        <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                            <div class="bg-primary-500 h-2 rounded-full transition-all duration-300" style="width: ${request.progress}%"></div>
+                        </div>
+                    </div>
+                ` : '';
+                
+                const imageDisplay = request.imageUrl ? `
+                    <div class="mt-3">
+                        <p class="text-sm text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-md p-3 font-mono break-all">
+                            <span class="font-semibold">Image URL:</span><br>
+                            ${request.imageUrl}
+                        </p>
+                    </div>
+                ` : '';
+
+                return `
+                    <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4 mb-4">
+                        <div class="flex justify-between items-start mb-2">
+                            <div class="flex-1">
+                                <p class="font-medium text-gray-900 dark:text-white">
+                                    ${request.formData.prompt}
+                                </p>
+                                <p class="text-sm text-gray-500 dark:text-gray-400">
+                                    ${request.formData.model} • ${request.formData.style} • ${request.formData.size}
+                                </p>
+                            </div>
+                            <div class="px-2 py-1 rounded-full text-xs font-medium ${statusClass}">
+                                ${request.status || 'queued'}
+                            </div>
+                        </div>
+                        ${progressBar}
+                        ${imageDisplay}
+                        <div class="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                            ID: ${request.generationRequestId}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Status polling function
+        function startStatusPolling() {
+            setInterval(async () => {
+                const activeRequests = generationRequests.filter(req => 
+                    !req.status || !['completed', 'failed'].includes(req.status)
+                );
+
+                for (const request of activeRequests) {
+                    try {
+                        const status = await getGenerationStatus(request.generationRequestId);
+                        Object.assign(request, status);
+                        updateGenerationList();
+                    } catch (error) {
+                        console.error('Status check failed:', error);
+                    }
+                }
+            }, 3000);
+        }
+
+        // Initialize app
+        function initializeApp() {
+            // Check system dark mode preference
+            if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                isDarkMode = true;
+                document.documentElement.classList.add('dark');
+                document.getElementById('dark-mode-toggle').textContent = '☀️';
+            }
+
+            // Initialize event listeners
+            initializeEventListeners();
+            
+            // Load initial user credits
+            getUserCredits(currentUser);
+            
+            // Start status polling
+            startStatusPolling();
+        }
+
+        // Start the app when DOM is loaded
+        document.addEventListener('DOMContentLoaded', initializeApp);
+    </script>
 </body>
 </html>

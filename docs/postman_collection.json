@@ -1,0 +1,438 @@
+{
+	"info": {
+		"_postman_id": "f72da02e-5dc1-4502-a677-54a6c4a86bcd",
+		"name": "Feraset Imagen API Collection",
+		"description": "Complete API collection for the AI Image Generation Backend System",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "42658830",
+		"_collection_link": "https://www.postman.com/altinors/workspace/feraset-imagen/collection/42658830-f72da02e-5dc1-4502-a677-54a6c4a86bcd?action=share&source=collection_link&creator=42658830"
+	},
+	"item": [
+		{
+			"name": "Admin",
+			"item": [
+				{
+					"name": "Seed Database",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/seed_database",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"seed_database"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Validate User",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/validate_user?userId={{default_user_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"validate_user"
+							],
+							"query": [
+								{
+									"key": "userId",
+									"value": "{{default_user_id}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Weekly Report",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/scheduleWeeklyReport",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"scheduleWeeklyReport"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "User Management",
+			"item": [
+				{
+					"name": "Get User Credits",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/getUserCredits?userId={{default_user_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"getUserCredits"
+							],
+							"query": [
+								{
+									"key": "userId",
+									"value": "{{default_user_id}}"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Image Generation",
+			"item": [
+				{
+					"name": "Create Generation Request - Model A - 512x512",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const resp = pm.response.json();",
+									"",
+									"const genId = resp.generationRequestId;",
+									"",
+									"pm.environment.set(\"generationRequestId\", genId);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"userId\": \"{{default_user_id}}\",\n  \"model\": \"Model A\",\n  \"style\": \"realistic\",\n  \"color\": \"vibrant\",\n  \"size\": \"512x512\",\n  \"prompt\": \"A beautiful sunset over mountains with vibrant colors\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/createGenerationRequest",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"createGenerationRequest"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Generation Request - Model B - 1024x1024",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const resp = pm.response.json();",
+									"",
+									"const genId = resp.generationRequestId;",
+									"",
+									"pm.environment.set(\"generationRequestId\", genId);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"userId\": \"{{default_user_id}}\",\n  \"model\": \"Model B\",\n  \"style\": \"anime\",\n  \"color\": \"pastel\",\n  \"size\": \"1024x1024\",\n  \"prompt\": \"Anime character in a magical forest with pastel colors\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/createGenerationRequest",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"createGenerationRequest"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Generation Request - Oil Painting - 1024x1792",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const resp = pm.response.json();",
+									"",
+									"const genId = resp.generationRequestId;",
+									"",
+									"pm.environment.set(\"generationRequestId\", genId);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"userId\": \"{{default_user_id}}\",\n  \"model\": \"Model A\",\n  \"style\": \"oil painting\",\n  \"color\": \"warm\",\n  \"size\": \"1024x1792\",\n  \"prompt\": \"Classic oil painting of a medieval castle with warm autumn colors\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/createGenerationRequest",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"createGenerationRequest"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Generation Status",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"packages": {},
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/getGenerationStatus?generationRequestId={{generationRequestId}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"getGenerationStatus"
+							],
+							"query": [
+								{
+									"key": "generationRequestId",
+									"value": "{{generationRequestId}}",
+									"description": "request ID from create response"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Error Testing",
+			"item": [
+				{
+					"name": "Invalid User - Non-existent",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/getUserCredits?userId=benyokum",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"getUserCredits"
+							],
+							"query": [
+								{
+									"key": "userId",
+									"value": "benyokum"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Invalid Generation Request - Missing Fields",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"userId\": \"{{default_user_id}}\",\n  \"model\": \"Model A\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/createGenerationRequest",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"createGenerationRequest"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Invalid Generation Request - Wrong Size",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"userId\": \"{{default_user_id}}\",\n  \"model\": \"Model A\",\n  \"style\": \"realistic\",\n  \"color\": \"vibrant\",\n  \"size\": \"800x600\",\n  \"prompt\": \"Test prompt\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/createGenerationRequest",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"createGenerationRequest"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Invalid Generation Request - Wrong Model",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"userId\": \"{{default_user_id}}\",\n  \"model\": \"Model C\",\n  \"style\": \"realistic\",\n  \"color\": \"vibrant\",\n  \"size\": \"512x512\",\n  \"prompt\": \"Test prompt\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/createGenerationRequest",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"createGenerationRequest"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Missing Generation Request ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/getGenerationStatus",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"getGenerationStatus"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "default_user_id",
+			"value": "arda",
+			"type": "string"
+		}
+	]
+}
