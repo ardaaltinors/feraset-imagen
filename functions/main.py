@@ -1,6 +1,6 @@
 """Firebase Cloud Functions entry point with clean architecture."""
 
-from firebase_functions import https_fn
+from firebase_functions import https_fn, scheduler_fn
 from firebase_functions.options import set_global_options
 from firebase_admin import initialize_app
 from controllers import SeedController, UserController, GenerationController, ReportController
@@ -81,13 +81,14 @@ def processImageGeneration(req: https_fn.Request) -> https_fn.Response:
     return generation_controller.process_background_generation(req)
 
 
-@https_fn.on_request()
-@cors_enabled
-def scheduleWeeklyReport(req: https_fn.Request) -> https_fn.Response:
+@scheduler_fn.on_schedule(
+    schedule="25 20 * * 1",
+    timezone=scheduler_fn.Timezone("UTC")
+)
+def weeklyReportScheduler(event: scheduler_fn.ScheduledEvent) -> None:
     """
     Generate weekly usage and credit consumption report.
     
-    This endpoint is designed to be triggered by a scheduler.
-    TODO: will be updated with @scheduler_fn
+    Runs every Monday at 20:25 UTC to generate weekly analytics.
     """
-    return report_controller.schedule_weekly_report(req)
+    report_controller.generate_weekly_report(event)

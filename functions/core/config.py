@@ -63,6 +63,8 @@ class Config:
             return False
         return False
     
+    
+    # https://firebase.google.com/docs/functions/task-functions?gen=2nd#retrieve-and
     @classmethod
     def get_worker_function_url(cls, function_name: str = "processImageGeneration") -> str:
         """Get worker function URL based on environment."""
