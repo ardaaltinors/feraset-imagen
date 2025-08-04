@@ -1,15 +1,19 @@
 """Configuration settings for the application."""
 
 import logging
+import os
 from typing import Dict, Any
+from dotenv import load_dotenv
+
+load_dotenv()
 
 
 class Config:
     """Application configuration."""
     
     # Firebase settings
-    PROJECT_ID = "feraset-imagen"
-    REGION = "us-central1"
+    PROJECT_ID = os.getenv('PROJECT_ID', 'feraset-imagen')
+    REGION = os.getenv('REGION', 'us-central1')
     
     # Firestore collections
     COLLECTIONS = {
@@ -52,8 +56,12 @@ class Config:
     # Worker function URLs
     @classmethod
     def is_emulator(cls) -> bool:
-        """Check if running in emulator environment."""
-        return cls.PROJECT_ID == "demo-project"
+        emulator = os.getenv('RUNNING_ON_EMULATOR', 'false').lower()
+        if emulator == 'true':
+            return True
+        if emulator == 'false':
+            return False
+        return False
     
     @classmethod
     def get_worker_function_url(cls, function_name: str = "processImageGeneration") -> str:

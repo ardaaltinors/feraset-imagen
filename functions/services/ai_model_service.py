@@ -6,6 +6,9 @@ import time
 from typing import Dict, Any, Optional
 from schemas import AIModel
 from datetime import datetime
+from repositories.style_repository import StyleRepository
+from repositories.color_repository import ColorRepository
+from repositories.size_repository import SizeRepository
 
 
 class AIModelService:
@@ -17,6 +20,9 @@ class AIModelService:
         """
         self.failure_rate = failure_rate
         self.logger = logging.getLogger(__name__)
+        self.style_repo = StyleRepository()
+        self.color_repo = ColorRepository()
+        self.size_repo = SizeRepository()
     
     def generate_image(
         self, 
@@ -36,8 +42,8 @@ class AIModelService:
                 model.value, style, color, size
             )
             
-            # Simulate realistic processing time (2 seconds to 2 minutes)
-            processing_time = random.uniform(2, 120)  # 2 to 120 seconds
+            # Simulate realistic processing time
+            processing_time = random.uniform(5, 40) # secs
             self.logger.info(f"Simulating processing time: {processing_time:.1f} seconds")
             time.sleep(processing_time)
             
@@ -131,15 +137,9 @@ class AIModelService:
         """
         Validate generation parameters against allowed values.
         """
-        # Valid options from case study requirements
-        valid_styles = {
-            "realistic", "anime", "oil painting", 
-            "sketch", "cyberpunk", "watercolor"
-        }
-        valid_colors = {
-            "vibrant", "monochrome", "pastel", "neon", "vintage"
-        }
-        valid_sizes = {"512x512", "1024x1024", "1024x1792"}
+        valid_styles = self.style_repo.get_valid_styles()
+        valid_colors = self.color_repo.get_valid_colors()
+        valid_sizes = self.size_repo.get_valid_sizes()
         
         errors = []
         
@@ -167,10 +167,5 @@ class AIModelService:
         """
         Get credit cost based on image size.
         """
-        size_costs = {
-            "512x512": 1,
-            "1024x1024": 3,
-            "1024x1792": 4
-        }
-        
+        size_costs = self.size_repo.get_size_credit_costs()
         return size_costs.get(size, 0)

@@ -4,7 +4,7 @@ from firebase_functions import https_fn
 from firebase_functions.options import set_global_options
 from firebase_admin import initialize_app
 from controllers import SeedController, UserController, GenerationController, ReportController
-from core import Config, setup_logging
+from core import Config, setup_logging, cors_enabled
 
 # Setup logging
 setup_logging()
@@ -21,6 +21,7 @@ report_controller = ReportController()
 
 
 @https_fn.on_request()
+@cors_enabled
 def seed_database(req: https_fn.Request) -> https_fn.Response:
     """
     Seed the database with initial data.
@@ -29,6 +30,7 @@ def seed_database(req: https_fn.Request) -> https_fn.Response:
 
 
 @https_fn.on_request()
+@cors_enabled
 def getUserCredits(req: https_fn.Request) -> https_fn.Response:
     """
     Get user's current credits and transaction history.
@@ -37,6 +39,7 @@ def getUserCredits(req: https_fn.Request) -> https_fn.Response:
 
 
 @https_fn.on_request()
+@cors_enabled
 def validate_user(req: https_fn.Request) -> https_fn.Response:
     """
     Validate if a user exists in the system.
@@ -45,6 +48,7 @@ def validate_user(req: https_fn.Request) -> https_fn.Response:
 
 
 @https_fn.on_request()
+@cors_enabled
 def createGenerationRequest(req: https_fn.Request) -> https_fn.Response:
     """
     Create a new image generation request.
@@ -53,6 +57,7 @@ def createGenerationRequest(req: https_fn.Request) -> https_fn.Response:
 
 
 @https_fn.on_request()
+@cors_enabled
 def getGenerationRequest(req: https_fn.Request) -> https_fn.Response:
     """
     Get generation request details by ID.
@@ -61,6 +66,7 @@ def getGenerationRequest(req: https_fn.Request) -> https_fn.Response:
 
 
 @https_fn.on_request()
+@cors_enabled
 def getGenerationStatus(req: https_fn.Request) -> https_fn.Response:
     """
     Get the current status of a generation request.
@@ -71,6 +77,7 @@ def getGenerationStatus(req: https_fn.Request) -> https_fn.Response:
 
 
 @https_fn.on_request()
+@cors_enabled
 def processImageGeneration(req: https_fn.Request) -> https_fn.Response:
     """
     Background worker function for processing image generation tasks from Cloud Tasks.
@@ -82,6 +89,7 @@ def processImageGeneration(req: https_fn.Request) -> https_fn.Response:
 
 
 @https_fn.on_request()
+@cors_enabled
 def scheduleWeeklyReport(req: https_fn.Request) -> https_fn.Response:
     """
     Generate weekly usage and credit consumption report.

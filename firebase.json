@@ -9,35 +9,35 @@
     ],
     "rewrites": [
       {
-        "source": "/api/generation/create",
+        "source": "/api/createGenerationRequest",
         "function": "createGenerationRequest"
       },
       {
-        "source": "/api/generation/status",
+        "source": "/api/getGenerationStatus",
         "function": "getGenerationStatus"
       },
       {
-        "source": "/api/generation/request",
+        "source": "/api/getGenerationRequest",
         "function": "getGenerationRequest"
       },
       {
-        "source": "/api/users/credits",
+        "source": "/api/getUserCredits",
         "function": "getUserCredits"
       },
       {
-        "source": "/api/admin/seed",
+        "source": "/api/seed_database",
         "function": "seed_database"
       },
       {
-        "source": "/api/admin/reports",
+        "source": "/api/scheduleWeeklyReport",
         "function": "scheduleWeeklyReport"
       },
       {
-        "source": "/api/admin/validate-user",
+        "source": "/api/validate_user",
         "function": "validate_user"
       },
       {
-        "source": "/api/internal/process",
+        "source": "/api/processImageGeneration",
         "function": "processImageGeneration"
       }
     ]
@@ -56,9 +56,6 @@
       "enabled": true
     },
     "singleProjectMode": true,
-    "auth": {
-      "port": 9099
-    },
     "tasks": {
       "port": 9499
     }

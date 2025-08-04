@@ -3,3 +3,4 @@ firebase-admin
 pydantic[email]>=2.0.0
 google-cloud-tasks>=2.16.0
 requests>=2.31.0
+python-dotenv>=1.0.0

@@ -16,7 +16,7 @@ class TaskQueueService:
         """Initialize task queue service."""
         self.logger = logging.getLogger(__name__)
         self.project_id = Config.PROJECT_ID
-        self.location = "us-central1"  # Firebase Functions default region
+        self.location = Config.REGION
         self.queue_name = "image-generation-queue"
         
         self.is_emulator = Config.is_emulator()
