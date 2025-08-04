@@ -392,34 +392,3 @@ class GenerationService:
         except Exception:
             return 0
     
-    def get_generation_request(self, generation_id: str) -> Dict[str, Any]:
-        """
-        Get generation request by ID.
-        """
-        try:
-            request_data = self.generation_repository.get_generation_request(generation_id)
-            
-            if not request_data:
-                return {
-                    "success": False,
-                    "message": f"Generation request not found: {generation_id}",
-                    "error": "Request does not exist",
-                    "error_type": "not_found"
-                }
-            
-            return {
-                "success": True,
-                "data": request_data,
-                "message": "Generation request retrieved successfully"
-            }
-            
-        except Exception as e:
-            self.logger.error(
-                "Error retrieving generation request %s: %s", generation_id, str(e)
-            )
-            return {
-                "success": False,
-                "message": f"Failed to retrieve generation request: {str(e)}",
-                "error": str(e),
-                "error_type": "system"
-            }

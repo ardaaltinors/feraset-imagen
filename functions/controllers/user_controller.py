@@ -2,6 +2,7 @@
 
 from firebase_functions import https_fn
 from services import UserService
+from utils import convert_firestore_datetime
 import logging
 import json
 
@@ -61,7 +62,7 @@ class UserController:
                     json.dumps({
                         "success": True,
                         "currentCredits": result["data"]["current_credits"],
-                        "transactions": result["data"]["transactions"]
+                        "transactions": convert_firestore_datetime(result["data"]["transactions"])
                     }),
                     status=200,
                     headers={"Content-Type": "application/json"}

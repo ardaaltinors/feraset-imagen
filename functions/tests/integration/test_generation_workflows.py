@@ -97,28 +97,6 @@ class TestGenerationProcessing:
         assert result["error_type"] == "not_found"
         assert "Generation request not found" in result["message"]
     
-    @patch('services.generation_service.GenerationRepository')
-    def test_get_generation_request_success(self, mock_gen_repo_class):
-        mock_gen_repo = Mock()
-        generation_data = {
-            "id": "gen_123",
-            "user_id": "test_user",
-            "model": "Model A",
-            "style": "realistic",
-            "status": GenerationStatus.PROCESSING.value
-        }
-        mock_gen_repo.get_generation_request.return_value = generation_data
-        mock_gen_repo_class.return_value = mock_gen_repo
-        
-        service = GenerationService()
-        
-        # Execute
-        result = service.get_generation_request("gen_123")
-        
-        # Assertions
-        assert result["success"] is True
-        assert result["data"] == generation_data
-        assert result["message"] == "Generation request retrieved successfully"
 
 
 class TestGenerationStatusCalculation:

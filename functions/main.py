@@ -56,13 +56,6 @@ def createGenerationRequest(req: https_fn.Request) -> https_fn.Response:
     return generation_controller.create_generation_request(req)
 
 
-@https_fn.on_request()
-@cors_enabled
-def getGenerationRequest(req: https_fn.Request) -> https_fn.Response:
-    """
-    Get generation request details by ID.
-    """
-    return generation_controller.get_generation_request(req)
 
 
 @https_fn.on_request()

@@ -17,10 +17,6 @@
         "function": "getGenerationStatus"
       },
       {
-        "source": "/api/getGenerationRequest",
-        "function": "getGenerationRequest"
-      },
-      {
         "source": "/api/getUserCredits",
         "function": "getUserCredits"
       },

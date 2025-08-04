@@ -162,88 +162,9 @@ class GenerationController:
                 headers={"Content-Type": "application/json"}
             )
     
-    def get_generation_request(self, req: https_fn.Request) -> https_fn.Response:
-        """
-        HTTP endpoint to get generation request details.
-        """
-        try:
-            self.logger.info(
-                "Get generation request from %s",
-                req.headers.get('X-Forwarded-For', 'unknown')
-            )
-            
-            # Extract generation request ID
-            generation_id = None
-            
-            if req.method == "GET":
-                generation_id = req.args.get('generationRequestId')
-            elif req.method == "POST":
-                try:
-                    if req.content_type and 'application/json' in req.content_type:
-                        request_data = req.get_json(silent=True)
-                        if request_data:
-                            generation_id = request_data.get('generationRequestId')
-                except Exception as e:
-                    self.logger.warning("Failed to parse JSON body: %s", str(e))
-            
-            if not generation_id:
-                return https_fn.Response(
-                    json.dumps({
-                        "success": False,
-                        "message": "generationRequestId parameter is required",
-                        "error": "Missing generationRequestId"
-                    }),
-                    status=400,
-                    headers={"Content-Type": "application/json"}
-                )
-            
-            # Call service layer
-            result = self.generation_service.get_generation_request(generation_id)
-            
-            if result.get("success"):
-                return https_fn.Response(
-                    json.dumps({
-                        "success": True,
-                        "data": result["data"]
-                    }),
-                    status=200,
-                    headers={"Content-Type": "application/json"}
-                )
-            else:
-                error_type = result.get("error_type", "system")
-                status_code = 404 if error_type == "not_found" else 500
-                
-                return https_fn.Response(
-                    json.dumps({
-                        "success": False,
-                        "message": result.get("message", "Failed to get generation request"),
-                        "error": result.get("error")
-                    }),
-                    status=status_code,
-                    headers={"Content-Type": "application/json"}
-                )
-                
-        except Exception as e:
-            self.logger.error("Controller error in get_generation_request: %s", str(e))
-            return https_fn.Response(
-                json.dumps({
-                    "success": False,
-                    "message": f"Controller error: {str(e)}",
-                    "error": str(e)
-                }),
-                status=500,
-                headers={"Content-Type": "application/json"}
-            )
-    
     def get_generation_status(self, req: https_fn.Request) -> https_fn.Response:
         """
         HTTP endpoint to get generation request status.
-        
-        Args:
-            req: Firebase Functions HTTP request object
-            
-        Returns:
-            https_fn.Response: Generation status details or error
         """
         try:
             self.logger.info(
