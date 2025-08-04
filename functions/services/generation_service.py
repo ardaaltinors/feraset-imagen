@@ -63,7 +63,7 @@ class GenerationService:
                     "error_type": "validation"
                 }
             
-            # Step 3: Atomically deduct credits and create generation request
+            # Step 3: deduct credits and create generation request
             credit_deduction_result = self._deduct_credits_and_create_request_async(
                 request_data, credit_cost, user_data
             )
@@ -124,8 +124,7 @@ class GenerationService:
                 "data": {
                     "generationRequestId": generation_id,
                     "status": GenerationStatus.QUEUED.value,
-                    "deductedCredits": credit_cost,
-                    "queuePosition": None  # Could be implemented with more complex queue tracking
+                    "deductedCredits": credit_cost
                 },
                 "message": "Generation request queued successfully"
             }

@@ -110,8 +110,7 @@ class GenerationController:
                     json.dumps({
                         "generationRequestId": response_data["generationRequestId"],
                         "status": response_data["status"],
-                        "deductedCredits": response_data["deductedCredits"],
-                        "queuePosition": response_data.get("queuePosition")
+                        "deductedCredits": response_data["deductedCredits"]
                     }, default=str),
                     status=202,  # Accepted - request queued for processing
                     headers={"Content-Type": "application/json"}

@@ -2,7 +2,7 @@
 
 from datetime import datetime
 from typing import List, Optional
-from pydantic import BaseModel, Field, validator, EmailStr
+from pydantic import BaseModel, Field, field_validator, EmailStr, ConfigDict
 from enum import Enum
 
 
@@ -14,10 +14,9 @@ class StyleModel(BaseModel):
     created_at: datetime = Field(default_factory=datetime.now)
     sort_order: int = Field(..., ge=1, le=100)
 
-    class Config:
-        json_encoders = {
-            datetime: lambda v: v.isoformat()
-        }
+    model_config = ConfigDict(
+        json_encoders={datetime: lambda v: v.isoformat()}
+    )
 
 
 class ColorModel(BaseModel):
@@ -29,7 +28,8 @@ class ColorModel(BaseModel):
     created_at: datetime = Field(default_factory=datetime.now)
     sort_order: int = Field(..., ge=1, le=100)
 
-    @validator('hex_examples')
+    @field_validator('hex_examples')
+    @classmethod
     def validate_hex_colors(cls, v):
         """Validate hex color format."""
         for color in v:
@@ -37,10 +37,9 @@ class ColorModel(BaseModel):
                 raise ValueError(f'Invalid hex color: {color}')
         return v
 
-    class Config:
-        json_encoders = {
-            datetime: lambda v: v.isoformat()
-        }
+    model_config = ConfigDict(
+        json_encoders={datetime: lambda v: v.isoformat()}
+    )
 
 
 class SizeModel(BaseModel):
@@ -55,10 +54,9 @@ class SizeModel(BaseModel):
     created_at: datetime = Field(default_factory=datetime.now)
     sort_order: int = Field(..., ge=1, le=100)
 
-    class Config:
-        json_encoders = {
-            datetime: lambda v: v.isoformat()
-        }
+    model_config = ConfigDict(
+        json_encoders={datetime: lambda v: v.isoformat()}
+    )
 
 
 class UserModel(BaseModel):
@@ -72,10 +70,9 @@ class UserModel(BaseModel):
     updated_at: datetime = Field(default_factory=datetime.now)
     last_login: Optional[datetime] = None
 
-    class Config:
-        json_encoders = {
-            datetime: lambda v: v.isoformat()
-        }
+    model_config = ConfigDict(
+        json_encoders={datetime: lambda v: v.isoformat()}
+    )
 
 
 class TransactionType(str, Enum):
@@ -94,10 +91,9 @@ class TransactionModel(BaseModel):
     user_id: str = Field(..., min_length=1, max_length=100)
     description: Optional[str] = Field(None, max_length=500)
 
-    class Config:
-        json_encoders = {
-            datetime: lambda v: v.isoformat()
-        }
+    model_config = ConfigDict(
+        json_encoders={datetime: lambda v: v.isoformat()}
+    )
 
 
 class UserCreditsResponse(BaseModel):
@@ -105,10 +101,9 @@ class UserCreditsResponse(BaseModel):
     current_credits: int = Field(..., ge=0)
     transactions: List[TransactionModel] = Field(default_factory=list)
 
-    class Config:
-        json_encoders = {
-            datetime: lambda v: v.isoformat()
-        }
+    model_config = ConfigDict(
+        json_encoders={datetime: lambda v: v.isoformat()}
+    )
 
 
 class AIModel(str, Enum):
@@ -155,10 +150,9 @@ class GenerationRequestModel(BaseModel):
     updated_at: datetime = Field(default_factory=datetime.now)
     completed_at: Optional[datetime] = None
 
-    class Config:
-        json_encoders = {
-            datetime: lambda v: v.isoformat()
-        }
+    model_config = ConfigDict(
+        json_encoders={datetime: lambda v: v.isoformat()}
+    )
 
 
 class CreateGenerationResponseModel(BaseModel):
@@ -166,12 +160,10 @@ class CreateGenerationResponseModel(BaseModel):
     generationRequestId: str = Field(..., min_length=1)
     status: GenerationStatus = GenerationStatus.QUEUED
     deductedCredits: int = Field(..., ge=0)
-    queuePosition: Optional[int] = None
 
-    class Config:
-        json_encoders = {
-            datetime: lambda v: v.isoformat()
-        }
+    model_config = ConfigDict(
+        json_encoders={datetime: lambda v: v.isoformat()}
+    )
 
 
 class GenerationStatusResponseModel(BaseModel):
@@ -184,12 +176,10 @@ class GenerationStatusResponseModel(BaseModel):
     created_at: datetime
     updated_at: datetime
     completed_at: Optional[datetime] = None
-    queue_position: Optional[int] = None
 
-    class Config:
-        json_encoders = {
-            datetime: lambda v: v.isoformat()
-        }
+    model_config = ConfigDict(
+        json_encoders={datetime: lambda v: v.isoformat()}
+    )
 
 
 class TaskPayloadModel(BaseModel):
