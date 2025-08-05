@@ -399,6 +399,10 @@ Here are some technical decisions made during development and potential improvem
 
 *Future Improvement*: For production, I would use Z-scores instead of fixed numbers. I would also look at data from many weeks, not just one week. This would make fewer false alarms and catch real problems better. But these methods need more time and data than this project had.
 
+**Task Recovery**: When background tasks fail too many times (5 attempts), they get deleted completely. But the user's request stays "queued" forever and their credits are never returned. 
+
+*Future Improvement*: Add a cleanup job that finds old "queued" requests and either retries them or refunds the user's credits. This would prevent requests from being stuck forever.
+
 ---
 
 **Built with Firebase Functions, Firestore, Cloud Tasks, and Python 3.13**
