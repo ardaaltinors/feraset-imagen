@@ -58,6 +58,8 @@ You can test the API using the live demo or the Postman collection.
 
   * **Live API Demo UI**: [feraset-api.altinors.com](https://feraset-api.altinors.com/)
   * **Postman Collection**: [View on Postman](https://www.google.com/search?q=https://www.postman.com/altinors/feraset-imagen/collection/1rwqfmm/feraset-imagen-api-collection) OR [download collection](https://github.com/ardaaltinors/feraset-imagen/blob/main/docs/postman_collection.json)
+
+![Demo UI Screenshot](docs/demo-ui-ss.jpeg)
 -----
 
 ## 🏗️ System Architecture
@@ -172,6 +174,8 @@ firebase emulators:start
 ```
 
 ### 🌱 Seed the Database
+
+- If you haven't imported firebase export file:
 
 ```bash
 # Seed realistic historical data

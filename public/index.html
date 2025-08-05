@@ -143,7 +143,18 @@
                                 Seed Database
                             </button>
 
+                            <button
+                                id="report-btn"
+                                class="w-full bg-blue-500 hover:bg-blue-600 disabled:bg-gray-400 text-white font-medium py-2 px-4 rounded-md transition-colors"
+                            >
+                                Generate Report
+                            </button>
+
                             <div id="seed-result" class="hidden rounded-md p-3">
+                                <p class="text-sm"></p>
+                            </div>
+
+                            <div id="report-result" class="hidden rounded-md p-3">
                                 <p class="text-sm"></p>
                             </div>
                         </div>
@@ -380,6 +391,13 @@
             return await apiCall('/seed_database', { method: 'POST' });
         }
 
+        async function generateReport() {
+            const endpoint = currentEnvironment === 'localhost' 
+                ? '/scheduleWeeklyReport' 
+                : '/scheduleWeeklyReport';
+            return await apiCall(endpoint, { method: 'POST' });
+        }
+
         // UI Event Handlers
         function initializeEventListeners() {
             // Environment selector
@@ -487,6 +505,35 @@
                 } finally {
                     btn.disabled = false;
                     btn.textContent = 'Seed Database';
+                }
+            });
+
+            // Generate report
+            document.getElementById('report-btn').addEventListener('click', async () => {
+                const btn = document.getElementById('report-btn');
+                const resultEl = document.getElementById('report-result');
+                
+                btn.disabled = true;
+                btn.textContent = 'Generating Report...';
+                hideElement(resultEl);
+
+                try {
+                    const result = await generateReport();
+                    if (result.reportStatus === 'success') {
+                        // Store report data in localStorage and redirect to report page
+                        localStorage.setItem('reportData', JSON.stringify(result));
+                        window.location.href = 'report.html';
+                    } else {
+                        throw new Error(result.error || 'Report generation failed');
+                    }
+                } catch (error) {
+                    resultEl.className = 'rounded-md p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800';
+                    resultEl.querySelector('p').className = 'text-sm text-red-700 dark:text-red-400';
+                    resultEl.querySelector('p').textContent = `Error: ${error.message}`;
+                    showElement(resultEl);
+                } finally {
+                    btn.disabled = false;
+                    btn.textContent = 'Generate Report';
                 }
             });
         }

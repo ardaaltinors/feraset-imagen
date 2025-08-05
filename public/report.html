@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weekly Analytics Report - Feraset AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#eff6ff',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-gray-50 dark:bg-gray-900 transition-colors">
+    <div id="app">
+        <!-- Header -->
+        <div class="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between items-center py-4">
+                    <div class="flex items-center space-x-4">
+                        <a href="index.html" class="text-primary-600 hover:text-primary-800 dark:text-primary-400 dark:hover:text-primary-300">
+                            ← Back to Demo
+                        </a>
+                        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">
+                            Weekly Analytics Report
+                        </h1>
+                    </div>
+                    
+                    <div class="flex items-center space-x-4">
+                        <!-- Dark Mode Toggle -->
+                        <button
+                            id="dark-mode-toggle"
+                            class="p-2 rounded-md text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+                        >
+                            🌙
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div id="loading" class="text-center py-12">
+                <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500 mx-auto"></div>
+                <p class="text-gray-600 dark:text-gray-400 mt-4">Loading report data...</p>
+            </div>
+
+            <div id="no-data" class="hidden text-center py-12">
+                <div class="text-gray-500 dark:text-gray-400">
+                    <h2 class="text-xl font-semibold mb-2">No Report Data Found</h2>
+                    <p class="mb-4">Please generate a report from the main page first.</p>
+                    <a href="index.html" class="text-primary-600 hover:text-primary-800 dark:text-primary-400 dark:hover:text-primary-300">
+                        Go back to main page
+                    </a>
+                </div>
+            </div>
+
+            <div id="report-content" class="hidden space-y-8">
+                <!-- Report Header -->
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+                    <div class="flex justify-between items-start mb-4">
+                        <div>
+                            <h2 class="text-xl font-bold text-gray-900 dark:text-white">Report Summary</h2>
+                            <p id="report-period" class="text-gray-600 dark:text-gray-400"></p>
+                        </div>
+                        <div id="anomaly-badge" class="px-3 py-1 rounded-full text-sm font-medium">
+                            <!-- Dynamically filled -->
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div class="text-center">
+                            <div id="total-requests" class="text-2xl font-bold text-primary-600 dark:text-primary-400">--</div>
+                            <div class="text-sm text-gray-600 dark:text-gray-400">Total Requests</div>
+                        </div>
+                        <div class="text-center">
+                            <div id="success-rate" class="text-2xl font-bold text-green-600 dark:text-green-400">--</div>
+                            <div class="text-sm text-gray-600 dark:text-gray-400">Success Rate</div>
+                        </div>
+                        <div class="text-center">
+                            <div id="active-users" class="text-2xl font-bold text-blue-600 dark:text-blue-400">--</div>
+                            <div class="text-sm text-gray-600 dark:text-gray-400">Active Users</div>
+                        </div>
+                        <div class="text-center">
+                            <div id="credits-consumed" class="text-2xl font-bold text-purple-600 dark:text-purple-400">--</div>
+                            <div class="text-sm text-gray-600 dark:text-gray-400">Credits Consumed</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Anomaly Analysis -->
+                <div id="anomaly-section" class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Anomaly Analysis</h3>
+                        <div id="anomaly-score-badge" class="px-3 py-1 rounded-full text-sm font-medium">
+                            <!-- Dynamically filled -->
+                        </div>
+                    </div>
+                    <div id="anomaly-list">
+                        <!-- Dynamically filled -->
+                    </div>
+                </div>
+
+                <!-- Generation Statistics -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <!-- Model Performance -->
+                    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+                        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Model Performance</h3>
+                        <div id="model-performance">
+                            <!-- Dynamically filled -->
+                        </div>
+                    </div>
+
+                    <!-- Style Breakdown -->
+                    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+                        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Popular Styles</h3>
+                        <div id="style-breakdown">
+                            <!-- Dynamically filled -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- User Activity -->
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Top Active Users</h3>
+                    <div id="user-activity">
+                        <!-- Dynamically filled -->
+                    </div>
+                </div>
+
+                <!-- Size Breakdown -->
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Image Size Distribution</h3>
+                    <div id="size-breakdown">
+                        <!-- Dynamically filled -->
+                    </div>
+                </div>
+
+                <!-- Credit Statistics -->
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Credit Statistics</h3>
+                    <div id="credit-stats" class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <!-- Dynamically filled -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let isDarkMode = false;
+
+        function initializeDarkMode() {
+            // Check system dark mode preference
+            if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                isDarkMode = true;
+                document.documentElement.classList.add('dark');
+                document.getElementById('dark-mode-toggle').textContent = '☀️';
+            }
+
+            // Dark mode toggle
+            document.getElementById('dark-mode-toggle').addEventListener('click', () => {
+                isDarkMode = !isDarkMode;
+                document.documentElement.classList.toggle('dark');
+                document.getElementById('dark-mode-toggle').textContent = isDarkMode ? '☀️' : '🌙';
+            });
+        }
+
+        function formatDate(dateString) {
+            return new Date(dateString).toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+        }
+
+        function formatPercent(value) {
+            return `${value.toFixed(1)}%`;
+        }
+
+        function getSeverityBadgeClass(severity) {
+            switch (severity) {
+                case 'critical':
+                    return 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400';
+                case 'high':
+                    return 'bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-400';
+                case 'medium':
+                    return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400';
+                case 'low':
+                    return 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400';
+                default:
+                    return 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400';
+            }
+        }
+
+        function renderReportSummary(data) {
+            const { summary, report_data, anomaly_summary } = data;
+            
+            if (!summary || !anomaly_summary) {
+                console.error('Missing summary or anomaly_summary in data:', data);
+                return;
+            }
+            
+            // Report period
+            const startDate = formatDate(summary.report_period.start_date);
+            const endDate = formatDate(summary.report_period.end_date);
+            document.getElementById('report-period').textContent = `${startDate} - ${endDate}`;
+
+            // Summary stats
+            document.getElementById('total-requests').textContent = summary.total_requests || 0;
+            document.getElementById('success-rate').textContent = formatPercent(summary.success_rate || 0);
+            document.getElementById('active-users').textContent = summary.active_users || 0;
+            document.getElementById('credits-consumed').textContent = summary.credits_consumed || 0;
+
+            // Anomaly badge
+            const anomalySeverity = anomaly_summary.severity_level || 'normal';
+            const anomalyBadge = document.getElementById('anomaly-badge');
+            anomalyBadge.textContent = `${anomaly_summary.total_anomalies || 0} anomalies (${anomalySeverity})`;
+            anomalyBadge.className = `px-3 py-1 rounded-full text-sm font-medium ${getSeverityBadgeClass(anomalySeverity)}`;
+        }
+
+        function renderAnomalyAnalysis(data) {
+            const anomaly_analysis = data.report_data?.anomaly_analysis;
+            const { anomaly_summary } = data;
+            
+            if (!anomaly_analysis || !anomaly_summary) {
+                console.error('Missing anomaly data:', data);
+                return;
+            }
+
+            // Anomaly score badge
+            const scoreBadge = document.getElementById('anomaly-score-badge');
+            scoreBadge.textContent = `Score: ${anomaly_summary.anomaly_score}`;
+            scoreBadge.className = `px-3 py-1 rounded-full text-sm font-medium ${getSeverityBadgeClass(anomaly_summary.severity_level)}`;
+
+            // Anomaly list
+            const anomalyList = document.getElementById('anomaly-list');
+            if (anomaly_analysis.detected_anomalies.length === 0) {
+                anomalyList.innerHTML = '<p class="text-gray-600 dark:text-gray-400">No anomalies detected this week. 🎉</p>';
+                return;
+            }
+
+            anomalyList.innerHTML = anomaly_analysis.detected_anomalies.map(anomaly => {
+                const badgeClass = getSeverityBadgeClass(anomaly.severity);
+                return `
+                    <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4 mb-3">
+                        <div class="flex justify-between items-start mb-2">
+                            <div class="flex-1">
+                                <p class="font-medium text-gray-900 dark:text-white">${anomaly.description}</p>
+                                <p class="text-sm text-gray-600 dark:text-gray-400 capitalize">Type: ${anomaly.type.replace(/_/g, ' ')}</p>
+                            </div>
+                            <span class="px-2 py-1 rounded-full text-xs font-medium ${badgeClass}">
+                                ${anomaly.severity}
+                            </span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderModelPerformance(data) {
+            const models = data.report_data?.model_performance;
+            
+            if (!models) {
+                console.error('Missing model performance data:', data);
+                return;
+            }
+            const modelContainer = document.getElementById('model-performance');
+            
+            modelContainer.innerHTML = Object.entries(models).map(([modelName, stats]) => {
+                const failureClass = stats.failure_rate > 15 ? 'text-red-600 dark:text-red-400' : 
+                                   stats.failure_rate > 10 ? 'text-yellow-600 dark:text-yellow-400' : 
+                                   'text-green-600 dark:text-green-400';
+                
+                return `
+                    <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4 mb-3">
+                        <div class="flex justify-between items-center mb-2">
+                            <h4 class="font-semibold text-gray-900 dark:text-white">${modelName}</h4>
+                            <span class="text-sm text-gray-600 dark:text-gray-400">${stats.total_requests} requests</span>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4 text-sm">
+                            <div>
+                                <span class="text-gray-600 dark:text-gray-400">Success Rate:</span>
+                                <span class="font-medium text-green-600 dark:text-green-400 ml-1">${formatPercent(stats.success_rate)}</span>
+                            </div>
+                            <div>
+                                <span class="text-gray-600 dark:text-gray-400">Failure Rate:</span>
+                                <span class="font-medium ${failureClass} ml-1">${formatPercent(stats.failure_rate)}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderStyleBreakdown(data) {
+            const styles = data.report_data?.generation_stats?.style_breakdown;
+            
+            if (!styles) {
+                console.error('Missing style breakdown data:', data);
+                return;
+            }
+            const total = Object.values(styles).reduce((sum, count) => sum + count, 0);
+            const sortedStyles = Object.entries(styles).sort((a, b) => b[1] - a[1]);
+            
+            const styleContainer = document.getElementById('style-breakdown');
+            styleContainer.innerHTML = sortedStyles.map(([style, count]) => {
+                const percentage = (count / total * 100).toFixed(1);
+                return `
+                    <div class="flex justify-between items-center py-2 border-b border-gray-200 dark:border-gray-700 last:border-b-0">
+                        <span class="text-gray-900 dark:text-white capitalize">${style.replace(/_/g, ' ')}</span>
+                        <div class="text-right">
+                            <span class="font-medium text-gray-900 dark:text-white">${count}</span>
+                            <span class="text-sm text-gray-600 dark:text-gray-400 ml-1">(${percentage}%)</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderUserActivity(data) {
+            const userBreakdown = data.report_data?.user_stats?.user_request_breakdown;
+            
+            if (!userBreakdown) {
+                console.error('Missing user activity data:', data);
+                return;
+            }
+            const sortedUsers = Object.entries(userBreakdown).sort((a, b) => b[1] - a[1]).slice(0, 10);
+            
+            const userContainer = document.getElementById('user-activity');
+            userContainer.innerHTML = sortedUsers.map(([userId, count]) => {
+                return `
+                    <div class="flex justify-between items-center py-2 border-b border-gray-200 dark:border-gray-700 last:border-b-0">
+                        <span class="text-gray-900 dark:text-white">${userId}</span>
+                        <span class="font-medium text-primary-600 dark:text-primary-400">${count} requests</span>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderSizeBreakdown(data) {
+            const sizes = data.report_data?.generation_stats?.size_breakdown;
+            
+            if (!sizes) {
+                console.error('Missing size breakdown data:', data);
+                return;
+            }
+            const total = Object.values(sizes).reduce((sum, count) => sum + count, 0);
+            const sortedSizes = Object.entries(sizes).sort((a, b) => b[1] - a[1]);
+            
+            const sizeContainer = document.getElementById('size-breakdown');
+            sizeContainer.innerHTML = sortedSizes.map(([size, count]) => {
+                const percentage = (count / total * 100).toFixed(1);
+                const credits = size === '512x512' ? 1 : size === '1024x1024' ? 3 : 4;
+                return `
+                    <div class="flex justify-between items-center py-2 border-b border-gray-200 dark:border-gray-700 last:border-b-0">
+                        <div>
+                            <span class="text-gray-900 dark:text-white">${size}</span>
+                            <span class="text-sm text-gray-600 dark:text-gray-400 ml-1">(${credits} credit${credits > 1 ? 's' : ''})</span>
+                        </div>
+                        <div class="text-right">
+                            <span class="font-medium text-gray-900 dark:text-white">${count}</span>
+                            <span class="text-sm text-gray-600 dark:text-gray-400 ml-1">(${percentage}%)</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderCreditStats(data) {
+            const creditStats = data.report_data?.credit_stats;
+            
+            if (!creditStats) {
+                console.error('Missing credit stats data:', data);
+                return;
+            }
+            const creditContainer = document.getElementById('credit-stats');
+            
+            creditContainer.innerHTML = `
+                <div class="text-center">
+                    <div class="text-2xl font-bold text-purple-600 dark:text-purple-400">${creditStats.total_credits_deducted}</div>
+                    <div class="text-sm text-gray-600 dark:text-gray-400">Credits Deducted</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-2xl font-bold text-red-600 dark:text-red-400">${creditStats.total_credits_refunded}</div>
+                    <div class="text-sm text-gray-600 dark:text-gray-400">Credits Refunded</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-2xl font-bold text-green-600 dark:text-green-400">${creditStats.net_credits_consumed}</div>
+                    <div class="text-sm text-gray-600 dark:text-gray-400">Net Consumed</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-2xl font-bold text-blue-600 dark:text-blue-400">${creditStats.average_credits_per_request.toFixed(1)}</div>
+                    <div class="text-sm text-gray-600 dark:text-gray-400">Avg per Request</div>
+                </div>
+            `;
+        }
+
+        function loadAndRenderReport() {
+            const reportDataString = localStorage.getItem('reportData');
+            
+            if (!reportDataString) {
+                document.getElementById('loading').classList.add('hidden');
+                document.getElementById('no-data').classList.remove('hidden');
+                return;
+            }
+
+            try {
+                const reportData = JSON.parse(reportDataString);
+                console.log('Report data loaded:', reportData); // Debug log
+                
+                // Hide loading, show content
+                document.getElementById('loading').classList.add('hidden');
+                document.getElementById('report-content').classList.remove('hidden');
+
+                // Render all sections
+                renderReportSummary(reportData);
+                renderAnomalyAnalysis(reportData);
+                renderModelPerformance(reportData);
+                renderStyleBreakdown(reportData);
+                renderUserActivity(reportData);
+                renderSizeBreakdown(reportData);
+                renderCreditStats(reportData);
+
+            } catch (error) {
+                console.error('Error parsing report data:', error);
+                document.getElementById('loading').classList.add('hidden');
+                document.getElementById('no-data').classList.remove('hidden');
+            }
+        }
+
+        // Initialize the report page
+        document.addEventListener('DOMContentLoaded', () => {
+            initializeDarkMode();
+            loadAndRenderReport();
+        });
+    </script>
+</body>
+</html>
