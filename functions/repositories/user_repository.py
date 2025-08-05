@@ -101,3 +101,23 @@ class UserRepository(BaseRepository):
             return True
         except Exception:
             return False
+    
+    def increment_total_images_generated(self, user_id: str) -> bool:
+        """
+        Increment user's total images generated counter.
+        """
+        try:
+            from firebase_admin import firestore
+            
+            user_ref = self.collection.document(user_id)
+            user_ref.update({
+                "total_images_generated": firestore.Increment(1),
+                "updated_at": firestore.SERVER_TIMESTAMP
+            })
+            
+            return True
+        except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Failed to increment total_images_generated for user {user_id}: {str(e)}")
+            return False

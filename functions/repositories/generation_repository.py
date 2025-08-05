@@ -221,16 +221,41 @@ class GenerationRepository(BaseRepository):
         image_url: str
     ) -> bool:
         """
-        Mark generation request as completed with image URL.
+        Mark generation request as completed with image URL and increment user's total images counter.
         """
         try:
+            # Get the generation request to find the user_id
+            generation_data = self.get_generation_request(generation_id)
+            if not generation_data:
+                return False
+            
+            user_id = generation_data.get("user_id")
+            if not user_id:
+                return False
+            
+            # Update generation request status
             update_data = {
                 "status": "completed",
                 "image_url": image_url,
                 "completed_at": datetime.now(),
                 "updated_at": datetime.now()
             }
-            return self.update_generation_request(generation_id, update_data)
+            
+            # Update generation request
+            request_updated = self.update_generation_request(generation_id, update_data)
+            
+            if request_updated:
+                # Increment user's total images generated counter
+                from .user_repository import UserRepository
+                user_repo = UserRepository()
+                increment_success = user_repo.increment_total_images_generated(user_id)
+                
+                if not increment_success:
+                    import logging
+                    logger = logging.getLogger(__name__)
+                    logger.error(f"Failed to increment total_images_generated counter for user {user_id}")
+            
+            return request_updated
         except Exception:
             return False
     
