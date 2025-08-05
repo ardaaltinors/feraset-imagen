@@ -199,6 +199,52 @@ class SeedRepository(BaseRepository):
                 "created_at": current_time - timedelta(days=40),
                 "updated_at": current_time - timedelta(hours=8),
                 "last_login": current_time - timedelta(hours=8)
+            }),
+            # New users for current week to trigger user activity spike
+            ("bot_spammer", {
+                "name": "Bot Spammer",
+                "email": "bot@spamservice.net",
+                "current_credits": 200,
+                "total_images_generated": 150,
+                "created_at": current_time - timedelta(days=2),
+                "updated_at": current_time - timedelta(hours=1),
+                "last_login": current_time - timedelta(hours=1)
+            }),
+            ("new_enterprise", {
+                "name": "Enterprise Client",
+                "email": "admin@bigcorp.com",
+                "current_credits": 1000,
+                "total_images_generated": 85,
+                "created_at": current_time - timedelta(days=3),
+                "updated_at": current_time - timedelta(hours=3),
+                "last_login": current_time - timedelta(hours=3)
+            }),
+            ("promo_user1", {
+                "name": "Promo User One",
+                "email": "promo1@campaign.com",
+                "current_credits": 50,
+                "total_images_generated": 25,
+                "created_at": current_time - timedelta(days=4),
+                "updated_at": current_time - timedelta(days=1),
+                "last_login": current_time - timedelta(days=1)
+            }),
+            ("promo_user2", {
+                "name": "Promo User Two",
+                "email": "promo2@campaign.com",
+                "current_credits": 45,
+                "total_images_generated": 30,
+                "created_at": current_time - timedelta(days=4),
+                "updated_at": current_time - timedelta(days=1),
+                "last_login": current_time - timedelta(days=1)
+            }),
+            ("viral_marketer", {
+                "name": "Viral Marketer",
+                "email": "viral@socialmedia.com",
+                "current_credits": 15,
+                "total_images_generated": 120,
+                "created_at": current_time - timedelta(days=5),
+                "updated_at": current_time - timedelta(hours=2),
+                "last_login": current_time - timedelta(hours=2)
             })
         ]
         
@@ -211,7 +257,8 @@ class SeedRepository(BaseRepository):
         
         # Available options
         user_ids = ["arda", "havanur", "alex_designer", "sarah_artist", "mike_creative", 
-                   "emma_photo", "david_dev", "lisa_marketing"]
+                   "emma_photo", "david_dev", "lisa_marketing", "bot_spammer", 
+                   "new_enterprise", "promo_user1", "promo_user2", "viral_marketer"]
         styles = ["realistic", "anime", "oil_painting", "sketch", "cyberpunk", "watercolor"]
         colors = ["vibrant", "monochrome", "pastel", "neon", "vintage"]
         sizes = ["512x512", "1024x1024", "1024x1792"]
@@ -239,20 +286,25 @@ class SeedRepository(BaseRepository):
         ]
         
         # Generate requests for each week with different patterns
-        for week in range(3):
-            week_start = current_time - timedelta(weeks=week+1)
+        for week in range(4):  # Now including current week (week 0)
+            if week == 0:  # Current week - ANOMALY WEEK
+                # Skip current week generation here, we'll handle it separately
+                continue
+                
+            week_start = current_time - timedelta(weeks=week)
             
-            # Week 1 (3 weeks ago): Normal activity - 25-35 requests
+            # Historical weeks pattern:
+            # Week 1 (1 week ago): Normal activity - 25-30 requests
             # Week 2 (2 weeks ago): Low activity - 15-20 requests  
-            # Week 3 (1 week ago): High activity - 40-50 requests
-            if week == 0:  # Last week - high activity
-                num_requests = random.randint(40, 50)
-                failure_rate = 0.08  # 8% failure rate
-            elif week == 1:  # 2 weeks ago - normal
-                num_requests = random.randint(25, 35)
+            # Week 3 (3 weeks ago): Low activity - 18-22 requests
+            if week == 1:  # 1 week ago - normal
+                num_requests = random.randint(25, 30)
                 failure_rate = 0.05  # 5% failure rate
-            else:  # 3 weeks ago - low activity
+            elif week == 2:  # 2 weeks ago - low
                 num_requests = random.randint(15, 20)
+                failure_rate = 0.04  # 4% failure rate
+            else:  # 3 weeks ago - low activity
+                num_requests = random.randint(18, 22)
                 failure_rate = 0.03  # 3% failure rate
             
             for i in range(num_requests):
@@ -301,6 +353,149 @@ class SeedRepository(BaseRepository):
                 else:
                     request_data["image_url"] = f"https://storage.googleapis.com/feraset-images/{generation_id}.jpg"
                     request_data["error_message"] = None
+                
+                requests.append(request_data)
+        
+        # CURRENT WEEK - Generate anomalous patterns
+        current_week_start = current_time - timedelta(days=current_time.weekday())
+        
+        # 1. Total request spike (2.5x multiplier) - average was ~20, so we need 50+
+        # 2. Individual user spike (bot_spammer will make 15+ requests)
+        # 3. High failure rate (Model B will have 20%+ failure rate)
+        # 4. Credit consumption spike (3x multiplier) - lots of large images
+        # 5. New user activity spike (5 new users this week)
+        
+        # Bot spammer making excessive requests (triggers user_request_spike)
+        for i in range(18):  # 18 requests from single user
+            days_offset = random.uniform(0, min(7, (current_time - current_week_start).days))
+            request_time = current_week_start + timedelta(days=days_offset)
+            
+            # Bot prefers large, expensive images
+            size = random.choice(["1024x1024", "1024x1792", "1024x1792"])  # More expensive sizes
+            generation_id = str(uuid.uuid4())
+            
+            request_data = {
+                "id": generation_id,
+                "user_id": "bot_spammer",
+                "model": AIModel.MODEL_B.value,  # Using Model B more
+                "style": random.choice(styles),
+                "color": random.choice(colors),
+                "size": size,
+                "prompt": "Generate spam content for marketing campaign",
+                "credits_deducted": size_credits[size],
+                "status": GenerationStatus.FAILED.value if random.random() < 0.25 else GenerationStatus.COMPLETED.value,
+                "created_at": request_time,
+                "updated_at": request_time + timedelta(seconds=random.randint(30, 120)),
+                "completed_at": request_time + timedelta(seconds=random.randint(30, 120))
+            }
+            
+            if request_data["status"] == GenerationStatus.FAILED.value:
+                request_data["error_message"] = "Content policy violation - spam detected"
+                request_data["image_url"] = None
+            else:
+                request_data["image_url"] = f"https://storage.googleapis.com/feraset-images/{generation_id}.jpg"
+                request_data["error_message"] = None
+                
+            requests.append(request_data)
+        
+        # Enterprise client bulk generation (credit consumption spike)
+        for i in range(25):  # 25 high-cost requests
+            days_offset = random.uniform(0, min(7, (current_time - current_week_start).days))
+            request_time = current_week_start + timedelta(days=days_offset)
+            
+            # Enterprise mostly uses expensive sizes
+            size = "1024x1792" if i < 15 else "1024x1024"  # Mostly 4-credit images
+            generation_id = str(uuid.uuid4())
+            
+            request_data = {
+                "id": generation_id,
+                "user_id": "new_enterprise",
+                "model": AIModel.MODEL_A.value,
+                "style": "realistic",  # Enterprise prefers realistic
+                "color": random.choice(["vibrant", "monochrome"]),
+                "size": size,
+                "prompt": f"Professional business image for corporate presentation {i+1}",
+                "credits_deducted": size_credits[size],
+                "status": GenerationStatus.COMPLETED.value,  # Enterprise has low failure
+                "created_at": request_time,
+                "updated_at": request_time + timedelta(seconds=random.randint(60, 180)),
+                "completed_at": request_time + timedelta(seconds=random.randint(60, 180)),
+                "image_url": f"https://storage.googleapis.com/feraset-images/{generation_id}.jpg",
+                "error_message": None
+            }
+            
+            requests.append(request_data)
+        
+        # Other new users with moderate activity
+        new_users = ["promo_user1", "promo_user2", "viral_marketer"]
+        for user in new_users:
+            num_user_requests = random.randint(4, 8)
+            for i in range(num_user_requests):
+                days_offset = random.uniform(0, min(7, (current_time - current_week_start).days))
+                request_time = current_week_start + timedelta(days=days_offset)
+                
+                generation_id = str(uuid.uuid4())
+                size = random.choice(sizes)
+                
+                # Higher failure rate for Model B
+                is_model_b = random.random() < 0.4
+                should_fail = (is_model_b and random.random() < 0.35) or random.random() < 0.1
+                
+                request_data = {
+                    "id": generation_id,
+                    "user_id": user,
+                    "model": AIModel.MODEL_B.value if is_model_b else AIModel.MODEL_A.value,
+                    "style": random.choice(styles),
+                    "color": random.choice(colors),
+                    "size": size,
+                    "prompt": random.choice(prompts),
+                    "credits_deducted": size_credits[size],
+                    "status": GenerationStatus.FAILED.value if should_fail else GenerationStatus.COMPLETED.value,
+                    "created_at": request_time,
+                    "updated_at": request_time + timedelta(seconds=random.randint(30, 300)),
+                    "completed_at": request_time + timedelta(seconds=random.randint(30, 300))
+                }
+                
+                if should_fail:
+                    request_data["error_message"] = random.choice([
+                        "Model B service degradation",
+                        "GPU memory allocation failed",
+                        "Model timeout - high load"
+                    ])
+                    request_data["image_url"] = None
+                else:
+                    request_data["image_url"] = f"https://storage.googleapis.com/feraset-images/{generation_id}.jpg"
+                    request_data["error_message"] = None
+                    
+                requests.append(request_data)
+        
+        # Add some normal activity from existing users in current week
+        existing_users = ["arda", "alex_designer", "sarah_artist", "emma_photo"]
+        for user in existing_users:
+            num_user_requests = random.randint(2, 5)
+            for i in range(num_user_requests):
+                days_offset = random.uniform(0, min(7, (current_time - current_week_start).days))
+                request_time = current_week_start + timedelta(days=days_offset)
+                
+                generation_id = str(uuid.uuid4())
+                size = random.choice(sizes)
+                
+                request_data = {
+                    "id": generation_id,
+                    "user_id": user,
+                    "model": random.choice(models),
+                    "style": random.choice(styles),
+                    "color": random.choice(colors),
+                    "size": size,
+                    "prompt": random.choice(prompts),
+                    "credits_deducted": size_credits[size],
+                    "status": GenerationStatus.COMPLETED.value,  # Normal users have good success
+                    "created_at": request_time,
+                    "updated_at": request_time + timedelta(seconds=random.randint(30, 180)),
+                    "completed_at": request_time + timedelta(seconds=random.randint(30, 180)),
+                    "image_url": f"https://storage.googleapis.com/feraset-images/{generation_id}.jpg",
+                    "error_message": None
+                }
                 
                 requests.append(request_data)
         
@@ -356,24 +551,24 @@ class SeedRepository(BaseRepository):
             start_date = report_date - timedelta(days=7)
             end_date = report_date
             
-            # Mock statistics based on week
-            if week == 1:  # Last week - high activity
-                total_requests = 45
-                completed_requests = 41
-                failed_requests = 4
-                net_credits_consumed = 140
-                active_users = 7
-            elif week == 2:  # 2 weeks ago - normal
-                total_requests = 30
-                completed_requests = 28
+            # Mock statistics based on week - establishing a low baseline for anomaly detection
+            if week == 1:  # 1 week ago - normal activity
+                total_requests = 28
+                completed_requests = 26
                 failed_requests = 2
-                net_credits_consumed = 85
+                net_credits_consumed = 75
                 active_users = 6
-            else:  # 3 weeks ago - low activity
+            elif week == 2:  # 2 weeks ago - low
                 total_requests = 18
                 completed_requests = 17
                 failed_requests = 1
-                net_credits_consumed = 52
+                net_credits_consumed = 48
+                active_users = 5
+            else:  # 3 weeks ago - low activity
+                total_requests = 20
+                completed_requests = 19
+                failed_requests = 1
+                net_credits_consumed = 55
                 active_users = 5
             
             report_id = f"weekly_report_{report_date.strftime('%Y_%m_%d')}"
@@ -418,8 +613,8 @@ class SeedRepository(BaseRepository):
                 },
                 "user_stats": {
                     "active_users_count": active_users,
-                    "active_users": [f"user_{i}" for i in range(1, active_users + 1)],
-                    "user_request_breakdown": {f"user_{i}": random.randint(1, 8) for i in range(1, active_users + 1)},
+                    "active_users": self._get_active_users_for_week(week, active_users),
+                    "user_request_breakdown": self._get_user_breakdown_for_week(week, total_requests, active_users),
                     "average_requests_per_user": round(total_requests / active_users, 2)
                 },
                 "model_performance": {
@@ -443,6 +638,35 @@ class SeedRepository(BaseRepository):
             reports.append(report_data)
         
         return reports
+    
+    def _get_active_users_for_week(self, week: int, count: int) -> List[str]:
+        """Get realistic active users for a given historical week."""
+        # Only existing users for historical weeks (no new users)
+        existing_users = ["arda", "havanur", "alex_designer", "sarah_artist", 
+                         "mike_creative", "emma_photo", "david_dev", "lisa_marketing"]
+        
+        # Select random subset of existing users
+        return random.sample(existing_users, min(count, len(existing_users)))
+    
+    def _get_user_breakdown_for_week(self, week: int, total_requests: int, active_users: int) -> Dict[str, int]:
+        """Generate realistic user request breakdown for a week."""
+        users = self._get_active_users_for_week(week, active_users)
+        breakdown = {}
+        
+        # Distribute requests among users with some variation
+        remaining_requests = total_requests
+        for i, user in enumerate(users):
+            if i == len(users) - 1:
+                # Last user gets remaining requests
+                breakdown[user] = remaining_requests
+            else:
+                # Random distribution with reasonable bounds
+                max_requests = min(8, remaining_requests - (len(users) - i - 1))
+                requests = random.randint(1, max(1, max_requests))
+                breakdown[user] = requests
+                remaining_requests -= requests
+        
+        return breakdown
     
     def seed_all_collections(self) -> dict:
         """Seed all collections with validated data including historical data."""
@@ -516,15 +740,7 @@ class SeedRepository(BaseRepository):
                 
                 batch.commit()
             
-            # Seed historical weekly reports
-            historical_reports = self.get_historical_weekly_reports()
-            reports_collection = self.db.collection(Config.get_collection_name("reports"))
-            
-            batch = self.db.batch()
-            for report_data in historical_reports:
-                doc_ref = reports_collection.document(report_data["id"])
-                batch.set(doc_ref, report_data)
-            batch.commit()
+            # Skip seeding historical reports - start with clean slate
             
             return {
                 "success": True,
@@ -534,11 +750,10 @@ class SeedRepository(BaseRepository):
                     "sizes": len(validated_sizes),  
                     "users": len(validated_users),
                     "generation_requests": len(historical_requests),
-                    "transactions": len(historical_transactions),
-                    "weekly_reports": len(historical_reports)
+                    "transactions": len(historical_transactions)
                 },
                 "historical_data": {
-                    "weeks_of_data": 3,
+                    "weeks_of_data": 4,
                     "total_requests": len(historical_requests),
                     "total_transactions": len(historical_transactions)
                 }

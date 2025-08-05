@@ -332,20 +332,35 @@ Automated weekly reports (Mondays 20:25 UTC) include:
 - Model performance and failure rates
 - **Anomaly Detection**: Usage spikes, high failure rates, suspicious patterns
 
-### 🚨 Anomaly Detection Thresholds
+### 🚨 Anomaly Detection System
 
-- **Request Spikes**: 2.5x historical average
-- **Credit Usage**: 3.0x historical average  
-- **Failure Rate**: >15%
-- **Single User**: >50 credits/day
-- **New Users**: >5 registrations/day
+The system performs **week-over-week comparison** to detect usage anomalies and performance issues by comparing the current week's data against the previous week's metrics.
+
+#### **Anomaly Categories:**
+
+**📈 Usage Pattern Anomalies:**
+- **Request Spikes**: Current week requests >2.5x previous week
+- **Credit Consumption Spikes**: Current week usage >3.0x previous week
+- **User Activity Spikes**: Active users increased by >5 from previous week
+- **Individual User Spikes**: Single user >10 requests/week
+
+**🚨 Performance Anomalies:**
+- **Critical Model Failure Rate**: Any model >15% failure rate
+- **Model Performance Disparity**: Worst model >5x higher failure rate than best model
+- **Model Failure Rate Spike**: Model failure rate >2x previous week
+- **System Failure Rate**: Overall failure rate >15% or doubled from previous week
+- **Model Underperforming**: Model >3x worse than average failure rate
+
+**💰 Credit System Anomalies:**
+- **High Refund Rate**: >30% refund rate or >2x previous week's rate
+- **Credit Consumption Patterns**: Unusual credit usage spikes
 
 
 ## 🔍 Troubleshooting
 
 ### ⚠️ Common Issues
 
-**Tasks Stuck at Queued**: Make sure you have set `RUNNING_ON_EMULATOR=false` in `.env`
+- **Tasks Stuck at Queued**: Make sure you have set `RUNNING_ON_EMULATOR=false` in `.env`
 
 ### 🐛 Debugging
 
@@ -370,11 +385,15 @@ Here are some technical decisions made during development and potential improvem
 
 *Future Improvement*: For a real application, I'd use Firebase Cloud Messaging (FCM) to send a push notification to the client when an image is ready, instead of requiring the client to repeatedly ask for the status with the getGenerationStatus endpoint.
 
-**Data Management**: To save development time, I didn't create API endpoints for managing styles, colors, or sizes. Instead, this data is added directly to the database using the seed_database function. In a larger system, these would have their own CRUD endpoints.
+**Data Management**: To save development time, I didn't create API endpoints for managing styles, colors, or sizes. Instead, this data is added directly to the database using the seed_database function. In a real system, these would have their own CRUD endpoints.
 
 **Error Handling**: Exception handling is currently done within each controller.
 
 *Future Improvement*: I would implement a global exception handling middleware. This would centralize all error logic, reduce code duplication, and ensure that all API errors have a consistent and predictable format.
+
+**Anomaly Detection Method**: The system uses simple rules like "2x higher than last week" to find problems. This is easy to understand and works well for this project. In a real system, I would use better math to find unusual patterns.
+
+*Future Improvement*: For production, I would use Z-scores instead of fixed numbers. I would also look at data from many weeks, not just one week. This would make fewer false alarms and catch real problems better. But these methods need more time and data than this project had.
 
 ---
 

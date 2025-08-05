@@ -220,31 +220,40 @@ class ReportRepository(BaseRepository):
         
         return model_stats
     
-    def get_historical_reports(self, days_back: int = 14) -> List[Dict[str, Any]]:
+    def get_previous_week_stats(self) -> Dict[str, Any]:
         """
-        Get historical weekly reports for anomaly detection comparison.
+        Get statistics for the previous week (7-14 days ago) for anomaly comparison.
         """
         try:
-            cutoff_date = datetime.now() - timedelta(days=days_back)
+            # Calculate date range for the previous week (7-14 days ago)
+            end_date = datetime.now() - timedelta(days=7)
+            start_date = end_date - timedelta(days=7)
             
-            docs = (
-                self.db.collection(Config.get_collection_name("reports"))
-                .where("report_type", "==", "weekly")
-                .where("generated_at", ">=", cutoff_date)
-                .order_by("generated_at", direction="DESCENDING")
-                .limit(10)  # Limit to last 10 reports
-                .stream()
-            )
+            # Get generation requests from the previous week
+            generation_requests = self._get_weekly_generation_requests(start_date, end_date)
             
-            reports = []
-            for doc in docs:
-                report_data = doc.to_dict()
-                report_data["id"] = doc.id
-                reports.append(report_data)
+            # Get user transactions from the previous week
+            user_transactions = self._get_weekly_transactions(start_date, end_date)
             
-            return reports
-        except Exception:
-            return []
+            # Calculate statistics for previous week
+            stats = {
+                "report_period": {
+                    "start_date": start_date.isoformat(),
+                    "end_date": end_date.isoformat()
+                },
+                "generation_stats": self._calculate_generation_stats(generation_requests),
+                "credit_stats": self._calculate_credit_stats(user_transactions),
+                "user_stats": self._calculate_user_stats(generation_requests, user_transactions),
+                "model_performance": self._calculate_model_performance(generation_requests)
+            }
+            
+            return stats
+            
+        except Exception as e:
+            return {
+                "error": f"Failed to generate previous week stats: {str(e)}",
+                "error_type": "system"
+            }
     
     def save_weekly_report(self, report_data: Dict[str, Any]) -> bool:
         """

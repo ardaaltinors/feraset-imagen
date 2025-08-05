@@ -76,13 +76,20 @@ class Config:
     
     # Anomaly detection thresholds
     ANOMALY_DETECTION = {
-        "user_request_spike_threshold": 10,  # Requests per user per day above average
-        "total_request_spike_multiplier": 2.5,  # Total requests multiplier vs historical
-        "credit_consumption_spike_multiplier": 3.0,  # Credit usage multiplier vs historical
+        "user_request_spike_threshold": 10,  # Requests per user per week threshold
+        "total_request_spike_multiplier": 2.5,  # Total requests multiplier vs previous week
+        "credit_consumption_spike_multiplier": 3.0,  # Credit usage multiplier vs previous week
         "failure_rate_threshold": 0.15,  # 15% failure rate threshold
-        "new_user_spike_threshold": 5,  # New users per day threshold
-        "single_user_credit_threshold": 50,  # Credits consumed by single user per day
-        "historical_days": 14  # Days to look back for historical averages
+        "new_user_spike_threshold": 5,  # New users per week threshold
+        "single_user_credit_threshold": 50,  # Credits consumed by single user per week
+        
+        # Model performance thresholds
+        "critical_model_failure_rate": 0.15,  # 15% critical failure rate threshold
+        "model_failure_spike_multiplier": 2.0,  # Model failure rate spike multiplier vs previous week
+        "model_performance_disparity_multiplier": 5.0,  # Performance gap multiplier between best/worst models
+        "model_underperforming_multiplier": 3.0,  # Underperforming threshold vs average
+        "suspicious_perfect_performance_requests": 20,  # Min requests for suspicious 0% failure rate
+        "min_requests_for_model_comparison": 5  # Minimum requests needed for meaningful model comparison
     }
     
     @classmethod

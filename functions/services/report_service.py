@@ -37,15 +37,13 @@ class ReportService:
                     "error_type": weekly_stats.get("error_type", "system")
                 }
             
-            # Get historical data for anomaly detection
-            historical_reports = self.report_repository.get_historical_reports(
-                days_back=Config.ANOMALY_DETECTION["historical_days"]
-            )
+            # Get previous week data for anomaly detection
+            previous_week_stats = self.report_repository.get_previous_week_stats()
             
             # Perform anomaly detection
             anomaly_analysis = self.anomaly_detection_service.detect_anomalies(
                 current_stats=weekly_stats,
-                historical_data=historical_reports
+                previous_week_stats=previous_week_stats
             )
             
             # Add anomaly analysis to weekly stats

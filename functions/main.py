@@ -81,6 +81,47 @@ def processImageGeneration(req: https_fn.Request) -> https_fn.Response:
     return generation_controller.process_background_generation(req)
 
 
+@https_fn.on_request()
+@cors_enabled
+def scheduleWeeklyReport(req: https_fn.Request) -> https_fn.Response:
+    """
+    Manually trigger weekly report generation for testing.
+    FOR TESTING ONLY.
+    """
+    try:
+        import json
+        from utils.converter import convert_firestore_datetime
+        
+        result = report_controller.report_service.generate_weekly_report()
+        
+        # Convert any Firestore datetime objects to JSON-serializable format
+        result = convert_firestore_datetime(result)
+        
+        if result.get("reportStatus") == "success":
+            return https_fn.Response(
+                json.dumps(result),
+                status=200,
+                headers={"Content-Type": "application/json"}
+            )
+        else:
+            return https_fn.Response(
+                json.dumps(result),
+                status=500,
+                headers={"Content-Type": "application/json"}
+            )
+    except Exception as e:
+        import json
+        return https_fn.Response(
+            json.dumps({
+                "reportStatus": "failed",
+                "error": str(e),
+                "error_type": "system"
+            }),
+            status=500,
+            headers={"Content-Type": "application/json"}
+        )
+
+
 @scheduler_fn.on_schedule(
     schedule="25 20 * * 1",
     timezone=scheduler_fn.Timezone("UTC")
