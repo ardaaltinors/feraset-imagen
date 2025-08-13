@@ -1,9 +1,11 @@
 """Repository for user-related database operations."""
 
-from typing import Dict, List, Optional, Any
+from typing import Dict, List, Optional, Any, Tuple
 from .base_repository import BaseRepository
 from schemas import TransactionModel, UserCreditsResponse
 from core import Config
+from datetime import datetime
+from utils.pagination import encode_page_token, decode_page_token
 
 
 class UserRepository(BaseRepository):
@@ -19,24 +21,57 @@ class UserRepository(BaseRepository):
         """
         return self.get(user_id)
     
-    def get_user_transactions(self, user_id: str) -> List[Dict[str, Any]]:
+    def get_user_transactions(
+        self,
+        user_id: str,
+        page_size: int = 20,
+        page_token: Optional[str] = None
+    ) -> Tuple[List[Dict[str, Any]], Optional[str]]:
         """
-        Get all transactions for a user.
+        Get paginated transactions for a user, newest first.
+
+        Returns (transactions, next_page_token).
         """
-        transactions_collection = self.db.collection(
-            Config.get_collection_name("users")
-        ).document(user_id).collection("transactions")
-        
-        # Order by timestamp desc
-        docs = transactions_collection.order_by("timestamp", direction="DESCENDING").stream()
-        
-        transactions = []
+        transactions_collection = (
+            self.db.collection(Config.get_collection_name("users"))
+            .document(user_id)
+            .collection("transactions")
+        )
+
+        # Primary sort by timestamp desc, secondary by id desc for deterministic order
+        query = (
+            transactions_collection
+            .order_by("timestamp", direction="DESCENDING")
+            .order_by("id", direction="DESCENDING")
+        )
+
+        if page_token:
+            # Decode token to resume after the last item of previous page
+            last_ts, last_id = decode_page_token(page_token)
+            # Use the last document snapshot as cursor to avoid API signature issues
+            last_snapshot = transactions_collection.document(last_id).get()
+            query = query.start_after(last_snapshot)
+
+        # Fetch one extra to detect if more pages exist
+        docs = query.limit(page_size + 1).stream()
+
+        transactions: List[Dict[str, Any]] = []
         for doc in docs:
-            transaction_data = doc.to_dict()
-            transaction_data["id"] = doc.id
-            transactions.append(transaction_data)
-        
-        return transactions
+            data = doc.to_dict()
+            data["id"] = doc.id
+            transactions.append(data)
+
+        next_token: Optional[str] = None
+        if len(transactions) > page_size:
+            last = transactions[page_size - 1]
+            # Keep only the first page_size items
+            transactions = transactions[:page_size]
+            last_ts = last.get("timestamp")
+            last_id = last.get("id")
+            if isinstance(last_ts, datetime) and isinstance(last_id, str):
+                next_token = encode_page_token(last_ts, last_id)
+
+        return transactions, next_token
     
     def get_user_credits_with_transactions(self, user_id: str) -> Optional[UserCreditsResponse]:
         """
@@ -47,8 +82,8 @@ class UserRepository(BaseRepository):
         if not user_data:
             return None
         
-        # Get transactions
-        transactions_data = self.get_user_transactions(user_id)
+        # Get transactions (first page by default)
+        transactions_data, _ = self.get_user_transactions(user_id)
         
         # Convert to TransactionModel objects for validation
         validated_transactions = []

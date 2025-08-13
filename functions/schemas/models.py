@@ -197,11 +197,18 @@ class TaskPayloadModel(BaseModel):
 
 
 # General API response DTOs
+class PaginationMeta(BaseModel):
+    """Pagination metadata for list responses."""
+    pageSize: int = Field(..., ge=1, le=200)
+    nextPageToken: Optional[str] = None
+
+
 class ApiResponse(BaseModel):
     """General success/response envelope for API endpoints."""
     success: bool = True
     data: Optional[Dict[str, Any]] = None
     message: Optional[str] = None
+    pagination: Optional[PaginationMeta] = None
 
     model_config = ConfigDict(
         json_encoders={datetime: lambda v: v.isoformat()}

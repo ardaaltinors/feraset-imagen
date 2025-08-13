@@ -27,12 +27,16 @@ class UserController:
                 req.headers.get('X-Forwarded-For', 'unknown')
             )
             
-            # Extract user_id from request
+            # Extract user_id and pagination from request
             user_id = None
+            page_size = None
+            page_token = None
             
             # Try to get user_id from query parameters (GET request)
             if req.method == "GET":
                 user_id = req.args.get('userId')
+                page_size = req.args.get('pageSize')
+                page_token = req.args.get('pageToken')
             
             # Try to get user_id from request body (POST request)
             elif req.method == "POST":
@@ -41,6 +45,8 @@ class UserController:
                         request_data = req.get_json(silent=True)
                         if request_data:
                             user_id = request_data.get('userId')
+                            page_size = request_data.get('pageSize')
+                            page_token = request_data.get('pageToken')
                 except Exception as e:
                     self.logger.warning("Failed to parse JSON body: %s", str(e))
             
@@ -56,7 +62,13 @@ class UserController:
                 )
             
             # Call service layer
-            result = self.user_service.get_user_credits(user_id)
+            # Parse page_size if provided
+            try:
+                parsed_page_size = int(page_size) if page_size is not None else 3
+            except Exception:
+                parsed_page_size = 3
+
+            result = self.user_service.get_user_credits(user_id, page_size=parsed_page_size, page_token=page_token)
             
             if result.get("success"):
                 envelope = ApiResponse(
@@ -65,7 +77,8 @@ class UserController:
                         "currentCredits": result["data"]["current_credits"],
                         "transactions": convert_firestore_datetime(result["data"]["transactions"])  # type: ignore
                     },
-                    message=result.get("message")
+                    message=result.get("message"),
+                    pagination=result.get("pagination")
                 )
                 return https_fn.Response(
                     envelope.model_dump_json(),
