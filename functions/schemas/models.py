@@ -4,6 +4,7 @@ from datetime import datetime
 from typing import List, Optional
 from pydantic import BaseModel, Field, field_validator, EmailStr, ConfigDict
 from enum import Enum
+from typing import Dict, Any, Optional
 
 
 class StyleModel(BaseModel):
@@ -193,3 +194,29 @@ class TaskPayloadModel(BaseModel):
     prompt: str = Field(..., min_length=1, max_length=1000)
     priority: str = Field(default="normal")
     retry_count: int = Field(default=0, ge=0)
+
+
+# General API response DTOs
+class ApiResponse(BaseModel):
+    """General success/response envelope for API endpoints."""
+    success: bool = True
+    data: Optional[Dict[str, Any]] = None
+    message: Optional[str] = None
+
+    model_config = ConfigDict(
+        json_encoders={datetime: lambda v: v.isoformat()}
+    )
+
+
+class ErrorResponse(BaseModel):
+    """General error response envelope for API endpoints."""
+    success: bool = False
+    message: str
+    error_type: str = "system"
+    error: Optional[str] = None
+    refunded: Optional[bool] = None
+    generation_request_id: Optional[str] = None
+
+    model_config = ConfigDict(
+        json_encoders={datetime: lambda v: v.isoformat()}
+    )

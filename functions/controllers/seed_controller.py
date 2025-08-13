@@ -2,6 +2,7 @@
 
 from firebase_functions import https_fn
 from services import SeedService
+from schemas import ApiResponse, ErrorResponse
 import logging
 import json
 
@@ -29,8 +30,9 @@ class SeedController:
             result = self.seed_service.seed_database()
             
             if result.get("success"):
+                env = ApiResponse(success=True, data=result, message=result.get("message"))
                 return https_fn.Response(
-                    json.dumps(result),
+                    env.model_dump_json(),
                     status=200,
                     headers={"Content-Type": "application/json"}
                 )
@@ -39,12 +41,9 @@ class SeedController:
                 error_type = result.get("error_type", "system")
                 status_code = 400 if error_type == "validation" else 500
                 
+                err = ErrorResponse(message=result.get("message", "Seeding failed"), error=result.get("error"), error_type=error_type)
                 return https_fn.Response(
-                    json.dumps({
-                        "error": result.get("message", "Seeding failed"),
-                        "error_type": error_type,
-                        "success": False
-                    }),
+                    err.model_dump_json(),
                     status=status_code,
                     headers={"Content-Type": "application/json"}
                 )
@@ -52,12 +51,9 @@ class SeedController:
         except Exception as e:
             # Catch any unexpected controller-level errors
             self.logger.error("Controller error in seed_database: %s", str(e))
+            err = ErrorResponse(message=f"Controller error: {str(e)}", error=str(e), error_type="system")
             return https_fn.Response(
-                json.dumps({
-                    "error": f"Controller error: {str(e)}",
-                    "error_type": "system",
-                    "success": False
-                }),
+                err.model_dump_json(),
                 status=500,
                 headers={"Content-Type": "application/json"}
             )

@@ -14,7 +14,9 @@ from .models import (
     GenerationRequestModel,
     CreateGenerationResponseModel,
     GenerationStatusResponseModel,
-    TaskPayloadModel
+    TaskPayloadModel,
+    ApiResponse,
+    ErrorResponse
 )
 
 __all__ = [
@@ -31,5 +33,7 @@ __all__ = [
     "GenerationRequestModel",
     "CreateGenerationResponseModel",
     "GenerationStatusResponseModel",
-    "TaskPayloadModel"
+    "TaskPayloadModel",
+    "ApiResponse",
+    "ErrorResponse"
 ]

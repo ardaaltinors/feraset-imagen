@@ -2,6 +2,7 @@
 
 from firebase_functions import https_fn
 from services import UserService
+from schemas import ApiResponse, ErrorResponse
 from utils import convert_firestore_datetime
 import logging
 import json
@@ -58,12 +59,16 @@ class UserController:
             result = self.user_service.get_user_credits(user_id)
             
             if result.get("success"):
-                return https_fn.Response(
-                    json.dumps({
-                        "success": True,
+                envelope = ApiResponse(
+                    success=True,
+                    data={
                         "currentCredits": result["data"]["current_credits"],
-                        "transactions": convert_firestore_datetime(result["data"]["transactions"])
-                    }),
+                        "transactions": convert_firestore_datetime(result["data"]["transactions"])  # type: ignore
+                    },
+                    message=result.get("message")
+                )
+                return https_fn.Response(
+                    envelope.model_dump_json(),
                     status=200,
                     headers={"Content-Type": "application/json"}
                 )
@@ -77,12 +82,13 @@ class UserController:
                 else:
                     status_code = 500
                 
+                error_env = ErrorResponse(
+                    message=result.get("message", "Failed to get user credits"),
+                    error=result.get("error"),
+                    error_type=error_type
+                )
                 return https_fn.Response(
-                    json.dumps({
-                        "success": False,
-                        "message": result.get("message", "Failed to get user credits"),
-                        "error": result.get("error")
-                    }),
+                    error_env.model_dump_json(),
                     status=status_code,
                     headers={"Content-Type": "application/json"}
                 )
@@ -90,12 +96,13 @@ class UserController:
         except Exception as e:
             # Catch any unexpected controller-level errors
             self.logger.error("Controller error in get_user_credits: %s", str(e))
+            error_env = ErrorResponse(
+                message=f"Controller error: {str(e)}",
+                error=str(e),
+                error_type="system"
+            )
             return https_fn.Response(
-                json.dumps({
-                    "success": False,
-                    "message": f"Controller error: {str(e)}",
-                    "error": str(e)
-                }),
+                error_env.model_dump_json(),
                 status=500,
                 headers={"Content-Type": "application/json"}
             )
@@ -137,19 +144,14 @@ class UserController:
             # Call service layer
             result = self.user_service.validate_user_exists(user_id)
             
-            return https_fn.Response(
-                json.dumps(result),
-                status=200 if result.get("success") else 404,
-                headers={"Content-Type": "application/json"}
-            )
+            if result.get("success"):
+                env = ApiResponse(success=True, data=result.get("user_data"), message=result.get("message"))
+                return https_fn.Response(env.model_dump_json(), status=200, headers={"Content-Type": "application/json"})
+            else:
+                err = ErrorResponse(message=result.get("message", "User not found"), error_type="not_found")
+                return https_fn.Response(err.model_dump_json(), status=404, headers={"Content-Type": "application/json"})
                 
         except Exception as e:
             self.logger.error("Controller error in validate_user: %s", str(e))
-            return https_fn.Response(
-                json.dumps({
-                    "success": False,
-                    "message": f"Controller error: {str(e)}"
-                }),
-                status=500,
-                headers={"Content-Type": "application/json"}
-            )
+            err = ErrorResponse(message=f"Controller error: {str(e)}", error_type="system", error=str(e))
+            return https_fn.Response(err.model_dump_json(), status=500, headers={"Content-Type": "application/json"})

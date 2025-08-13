@@ -2,7 +2,7 @@
 
 from firebase_functions import https_fn
 from services import GenerationService
-from schemas import CreateGenerationRequestModel
+from schemas import CreateGenerationRequestModel, ApiResponse, ErrorResponse
 import logging
 import json
 from datetime import datetime
@@ -104,14 +104,14 @@ class GenerationController:
             result = self.generation_service.create_generation_request(validated_request)
             
             if result.get("success"):
-                # Success response - now async with queue information
-                response_data = result["data"]
+                # Success response - standardized envelope
+                response_envelope = ApiResponse(
+                    success=True,
+                    data=result.get("data"),
+                    message=result.get("message")
+                )
                 return https_fn.Response(
-                    json.dumps({
-                        "generationRequestId": response_data["generationRequestId"],
-                        "status": response_data["status"],
-                        "deductedCredits": response_data["deductedCredits"]
-                    }, default=str),
+                    response_envelope.model_dump_json(),
                     status=202,  # Accepted - request queued for processing
                     headers={"Content-Type": "application/json"}
                 )
@@ -134,15 +134,15 @@ class GenerationController:
                 else:
                     status_code = 500
                 
+                error_envelope = ErrorResponse(
+                    message=result.get("message", "Generation failed"),
+                    error=result.get("error"),
+                    error_type=error_type,
+                    refunded=result.get("refunded", False),
+                    generation_request_id=result.get("generation_request_id")
+                )
                 return https_fn.Response(
-                    json.dumps({
-                        "success": False,
-                        "message": result.get("message", "Generation failed"),
-                        "error": result.get("error"),
-                        "error_type": error_type,
-                        "refunded": result.get("refunded", False),
-                        "generation_request_id": result.get("generation_request_id")
-                    }),
+                    error_envelope.model_dump_json(),
                     status=status_code,
                     headers={"Content-Type": "application/json"}
                 )
@@ -150,13 +150,13 @@ class GenerationController:
         except Exception as e:
             # Catch any unexpected controller-level errors
             self.logger.error("Controller error in create_generation_request: %s", str(e))
+            error_envelope = ErrorResponse(
+                message=f"Controller error: {str(e)}",
+                error=str(e),
+                error_type="system"
+            )
             return https_fn.Response(
-                json.dumps({
-                    "success": False,
-                    "message": f"Controller error: {str(e)}",
-                    "error": str(e),
-                    "error_type": "system"
-                }),
+                error_envelope.model_dump_json(),
                 status=500,
                 headers={"Content-Type": "application/json"}
             )
@@ -200,8 +200,13 @@ class GenerationController:
             result = self.generation_service.get_generation_status(generation_id)
             
             if result.get("success"):
+                response_envelope = ApiResponse(
+                    success=True,
+                    data=result.get("data"),
+                    message=result.get("message")
+                )
                 return https_fn.Response(
-                    json.dumps(result["data"], default=str),
+                    response_envelope.model_dump_json(),
                     status=200,
                     headers={"Content-Type": "application/json"}
                 )
@@ -209,24 +214,26 @@ class GenerationController:
                 error_type = result.get("error_type", "system")
                 status_code = 404 if error_type == "not_found" else 500
                 
+                error_envelope = ErrorResponse(
+                    message=result.get("message", "Failed to get generation status"),
+                    error=result.get("error"),
+                    error_type=error_type
+                )
                 return https_fn.Response(
-                    json.dumps({
-                        "success": False,
-                        "message": result.get("message", "Failed to get generation status"),
-                        "error": result.get("error")
-                    }),
+                    error_envelope.model_dump_json(),
                     status=status_code,
                     headers={"Content-Type": "application/json"}
                 )
                 
         except Exception as e:
             self.logger.error("Controller error in get_generation_status: %s", str(e))
+            error_envelope = ErrorResponse(
+                message=f"Controller error: {str(e)}",
+                error=str(e),
+                error_type="system"
+            )
             return https_fn.Response(
-                json.dumps({
-                    "success": False,
-                    "message": f"Controller error: {str(e)}",
-                    "error": str(e)
-                }),
+                error_envelope.model_dump_json(),
                 status=500,
                 headers={"Content-Type": "application/json"}
             )
