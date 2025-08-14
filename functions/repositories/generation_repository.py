@@ -3,10 +3,11 @@
 from typing import Dict, List, Optional, Any
 from firebase_admin import firestore
 from .base_repository import BaseRepository
-from schemas import TransactionType
+from schemas import TransactionType, TransactionModel, GenerationRequestModel
 from core import Config
 import uuid
 from datetime import datetime
+from pydantic import ValidationError
 
 
 class GenerationRepository(BaseRepository):
@@ -59,27 +60,42 @@ class GenerationRepository(BaseRepository):
     def atomic_credit_deduction_and_request_creation(
         self,
         user_id: str,
-        current_credits: int,
         credit_cost: int,
-        generation_data: Dict[str, Any],
-        transaction_data: Dict[str, Any]
+        generation_params: Dict[str, Any],
+        transaction_description: str = ""
     ) -> Dict[str, Any]:
         """
         Deduct credits and create generation request using Firestore transaction.
+        Uses model-first approach for better type safety and validation.
         """
         try:
             generation_id = str(uuid.uuid4())
             transaction_id = str(uuid.uuid4())
             
-            # Prepare data outside transaction
-            generation_data["id"] = generation_id
-            generation_data["created_at"] = datetime.now()
-            generation_data["updated_at"] = datetime.now()
+            # Create validated models outside transaction (best practice)
+            generation_request = GenerationRequestModel(
+                id=generation_id,
+                user_id=user_id,
+                model=generation_params["model"],
+                style=generation_params["style"],
+                color=generation_params["color"],
+                size=generation_params["size"],
+                prompt=generation_params["prompt"],
+                status=generation_params.get("status", "pending"),
+                credits_deducted=credit_cost,
+                created_at=datetime.now(),
+                updated_at=datetime.now()
+            )
             
-            transaction_data["id"] = transaction_id
-            transaction_data["user_id"] = user_id
-            transaction_data["generation_request_id"] = generation_id
-            transaction_data["timestamp"] = datetime.now()
+            transaction_model = TransactionModel(
+                id=transaction_id,
+                type=TransactionType.DEDUCTION,
+                credits=credit_cost,
+                generation_request_id=generation_id,
+                timestamp=datetime.now(),
+                user_id=user_id,
+                description=transaction_description or f"Credit deduction for {generation_params['model']} generation"
+            )
             
             @firestore.transactional
             def deduct_credits_transaction(transaction):
@@ -110,11 +126,15 @@ class GenerationRepository(BaseRepository):
                     "updated_at": datetime.now()
                 })
                 
+                # Use validated model data (convert to dict for Firestore)
+                generation_dict = generation_request.model_dump()
+                transaction_dict = transaction_model.model_dump()
+                
                 # Create generation request
-                transaction.set(generation_ref, generation_data)
+                transaction.set(generation_ref, generation_dict)
                 
                 # Create transaction record
-                transaction.set(transaction_ref, transaction_data)
+                transaction.set(transaction_ref, transaction_dict)
                 
                 return new_credits
             
@@ -128,6 +148,12 @@ class GenerationRepository(BaseRepository):
                 "new_credits": new_credits
             }
             
+        except ValidationError as e:
+            return {
+                "success": False,
+                "error": f"Data validation failed: {str(e)}",
+                "error_type": "validation"
+            }
         except ValueError as e:
             return {
                 "success": False,
@@ -150,20 +176,21 @@ class GenerationRepository(BaseRepository):
     ) -> Dict[str, Any]:
         """
         Refund credits and update generation request status using Firestore transaction.
+        Uses model-first approach for better type safety.
         """
         try:
             refund_transaction_id = str(uuid.uuid4())
             
-            # Prepare refund transaction data outside transaction
-            refund_transaction_data = {
-                "id": refund_transaction_id,
-                "type": TransactionType.REFUND.value,
-                "credits": credit_amount,
-                "generation_request_id": generation_id,
-                "timestamp": datetime.now(),
-                "user_id": user_id,
-                "description": f"Refund for failed generation: {error_message}"
-            }
+            # Create validated refund transaction model outside transaction
+            refund_transaction_model = TransactionModel(
+                id=refund_transaction_id,
+                type=TransactionType.REFUND,
+                credits=credit_amount,
+                generation_request_id=generation_id,
+                timestamp=datetime.now(),
+                user_id=user_id,
+                description=f"Refund for failed generation: {error_message}"
+            )
             
             @firestore.transactional
             def refund_credits_transaction(transaction):
@@ -197,8 +224,11 @@ class GenerationRepository(BaseRepository):
                     "completed_at": datetime.now()
                 })
                 
+                # Use validated model data (convert to dict for Firestore)
+                refund_transaction_dict = refund_transaction_model.model_dump()
+                
                 # Create refund transaction record
-                transaction.set(transaction_ref, refund_transaction_data)
+                transaction.set(transaction_ref, refund_transaction_dict)
                 
                 return new_credits
             
@@ -212,6 +242,18 @@ class GenerationRepository(BaseRepository):
                 "new_credits": new_credits
             }
             
+        except ValidationError as e:
+            return {
+                "success": False,
+                "error": f"Data validation failed: {str(e)}",
+                "error_type": "validation"
+            }
+        except ValueError as e:
+            return {
+                "success": False,
+                "error": str(e),
+                "error_type": "validation"
+            }
         except Exception as e:
             return {
                 "success": False,

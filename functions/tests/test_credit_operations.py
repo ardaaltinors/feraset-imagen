@@ -40,12 +40,21 @@ class TestCreditDeduction:
                 repo = GenerationRepository()
                 repo._db = mock_firestore_db
                 
+                # Extract generation parameters from sample data
+                generation_params = {
+                    "model": sample_generation_data["model"],
+                    "style": sample_generation_data["style"],
+                    "color": sample_generation_data["color"],
+                    "size": sample_generation_data["size"],
+                    "prompt": sample_generation_data["prompt"],
+                    "status": sample_generation_data["status"]
+                }
+                
                 result = repo.atomic_credit_deduction_and_request_creation(
                     user_id="test_user_123",
-                    current_credits=100,
                     credit_cost=3,
-                    generation_data=sample_generation_data,
-                    transaction_data=sample_transaction_data
+                    generation_params=generation_params,
+                    transaction_description="Test generation"
                 )
         
         # Assertions
@@ -91,12 +100,21 @@ class TestCreditDeduction:
                 repo = GenerationRepository()
                 repo._db = mock_firestore_db
                 
+                # Extract generation parameters from sample data
+                generation_params = {
+                    "model": sample_generation_data["model"],
+                    "style": sample_generation_data["style"],
+                    "color": sample_generation_data["color"],
+                    "size": sample_generation_data["size"],
+                    "prompt": sample_generation_data["prompt"],
+                    "status": sample_generation_data["status"]
+                }
+                
                 result = repo.atomic_credit_deduction_and_request_creation(
                     user_id="test_user_123",
-                    current_credits=2,
                     credit_cost=3,
-                    generation_data=sample_generation_data,
-                    transaction_data=sample_transaction_data
+                    generation_params=generation_params,
+                    transaction_description="Test generation"
                 )
         
         # Assertions
@@ -133,12 +151,21 @@ class TestCreditDeduction:
                 repo = GenerationRepository()
                 repo._db = mock_firestore_db
                 
+                # Extract generation parameters from sample data
+                generation_params = {
+                    "model": sample_generation_data["model"],
+                    "style": sample_generation_data["style"],
+                    "color": sample_generation_data["color"],
+                    "size": sample_generation_data["size"],
+                    "prompt": sample_generation_data["prompt"],
+                    "status": sample_generation_data["status"]
+                }
+                
                 result = repo.atomic_credit_deduction_and_request_creation(
                     user_id="nonexistent_user",
-                    current_credits=100,
                     credit_cost=3,
-                    generation_data=sample_generation_data,
-                    transaction_data=sample_transaction_data
+                    generation_params=generation_params,
+                    transaction_description="Test generation"
                 )
         
         # Assertions

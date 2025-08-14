@@ -39,22 +39,24 @@ def sample_user_data():
 @pytest.fixture
 def sample_generation_data():
     """Sample generation request data for testing."""
+    from schemas import AIModel, GenerationStatus
     return {
         "user_id": "test_user_123",
-        "model": "model_a",
+        "model": AIModel.MODEL_A,
         "style": "realistic",
         "color": "vibrant",
         "size": "1024x1024",
         "prompt": "A beautiful landscape",
-        "status": "pending",
+        "status": GenerationStatus.PENDING,
         "credits_deducted": 3
     }
 
 @pytest.fixture
 def sample_transaction_data():
     """Sample transaction data for testing."""
+    from schemas import TransactionType
     return {
-        "type": "deduction",
+        "type": TransactionType.DEDUCTION,
         "credits": 3,
         "description": "Image generation - model_a - 1024x1024",
         "user_id": "test_user_123"

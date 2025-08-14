@@ -192,33 +192,27 @@ class GenerationService:
     ) -> Dict[str, Any]:
         """
         Deduct credits and create generation request for task processing.
+        Uses model-first approach for better type safety.
         """
-        # Prepare generation request data with pending status
-        generation_data = {
-            "user_id": request_data.userId,
-            "model": request_data.model.value,
+        # Prepare generation parameters for model-first approach
+        generation_params = {
+            "model": request_data.model,  # AIModel enum
             "style": request_data.style,
             "color": request_data.color,
             "size": request_data.size,
             "prompt": request_data.prompt,
-            "status": GenerationStatus.PENDING.value,
-            "credits_deducted": credit_cost
+            "status": GenerationStatus.PENDING  # GenerationStatus enum
         }
         
-        # Prepare transaction data
-        transaction_data = {
-            "type": TransactionType.DEDUCTION.value,
-            "credits": credit_cost,
-            "description": f"Image generation - {request_data.model.value} - {request_data.size}"
-        }
+        # Create descriptive transaction message
+        transaction_description = f"Image generation - {request_data.model.value} - {request_data.size}"
         
-        # Perform atomic operation
+        # Perform atomic operation with new clean signature
         result = self.generation_repository.atomic_credit_deduction_and_request_creation(
             user_id=request_data.userId,
-            current_credits=user_data.get("current_credits", 0),
             credit_cost=credit_cost,
-            generation_data=generation_data,
-            transaction_data=transaction_data
+            generation_params=generation_params,
+            transaction_description=transaction_description
         )
         
         if result["success"]:
