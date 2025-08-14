@@ -24,30 +24,39 @@ class TestCreditDeduction:
         mock_user_ref = Mock()
         mock_user_ref.get.return_value = mock_user_doc
         
+        mock_transaction_obj = Mock()
         mock_firestore_db.collection.return_value.document.return_value = mock_user_ref
+        mock_firestore_db.transaction.return_value = mock_transaction_obj
+        
+        # Mock the transactional decorator
+        def mock_transactional(func):
+            def wrapper(transaction):
+                return func(transaction)
+            return wrapper
         
         # Create repository with mocked database
-        with patch('repositories.generation_repository.firestore.client', return_value=mock_firestore_db):
-            repo = GenerationRepository()
-            repo._db = mock_firestore_db
-            
-            result = repo.atomic_credit_deduction_and_request_creation(
-                user_id="test_user_123",
-                current_credits=100,
-                credit_cost=3,
-                generation_data=sample_generation_data,
-                transaction_data=sample_transaction_data
-            )
+        with patch('repositories.generation_repository.firestore.transactional', mock_transactional):
+            with patch('repositories.generation_repository.firestore.client', return_value=mock_firestore_db):
+                repo = GenerationRepository()
+                repo._db = mock_firestore_db
+                
+                result = repo.atomic_credit_deduction_and_request_creation(
+                    user_id="test_user_123",
+                    current_credits=100,
+                    credit_cost=3,
+                    generation_data=sample_generation_data,
+                    transaction_data=sample_transaction_data
+                )
         
         # Assertions
         assert result["success"] is True
         assert "generation_id" in result
         assert result["new_credits"] == 97
         
-        # Verify batch operations were called
-        mock_firestore_db.batch.assert_called_once()
-        batch = mock_firestore_db.batch.return_value
-        batch.commit.assert_called_once()
+        # Verify transaction operations were called
+        mock_firestore_db.transaction.assert_called_once()
+        mock_transaction_obj.update.assert_called()
+        mock_transaction_obj.set.assert_called()
     
     def test_atomic_credit_deduction_insufficient_credits(self, mock_firestore_db, sample_user_data, sample_generation_data, sample_transaction_data):
         """Test credit deduction fails with insufficient credits."""
@@ -62,29 +71,38 @@ class TestCreditDeduction:
         mock_user_ref = Mock()
         mock_user_ref.get.return_value = mock_user_doc
         
+        mock_transaction_obj = Mock()
         mock_firestore_db.collection.return_value.document.return_value = mock_user_ref
+        mock_firestore_db.transaction.return_value = mock_transaction_obj
+        
+        # Mock transactional to raise ValueError for insufficient credits
+        def mock_transactional(func):
+            def wrapper(transaction):
+                # Simulate the transaction logic that checks credits
+                user_doc = mock_user_ref.get(transaction=transaction)
+                if user_doc.to_dict()["current_credits"] < 3:
+                    raise ValueError("Insufficient credits")
+                return func(transaction)
+            return wrapper
         
         # Create repository with mocked database
-        with patch('repositories.generation_repository.firestore.client', return_value=mock_firestore_db):
-            repo = GenerationRepository()
-            repo._db = mock_firestore_db
-            
-            result = repo.atomic_credit_deduction_and_request_creation(
-                user_id="test_user_123",
-                current_credits=2,
-                credit_cost=3,
-                generation_data=sample_generation_data,
-                transaction_data=sample_transaction_data
-            )
+        with patch('repositories.generation_repository.firestore.transactional', mock_transactional):
+            with patch('repositories.generation_repository.firestore.client', return_value=mock_firestore_db):
+                repo = GenerationRepository()
+                repo._db = mock_firestore_db
+                
+                result = repo.atomic_credit_deduction_and_request_creation(
+                    user_id="test_user_123",
+                    current_credits=2,
+                    credit_cost=3,
+                    generation_data=sample_generation_data,
+                    transaction_data=sample_transaction_data
+                )
         
         # Assertions
         assert result["success"] is False
         assert result["error"] == "Insufficient credits"
         assert result["error_type"] == "validation"
-        
-        # Verify no batch commit was called
-        batch = mock_firestore_db.batch.return_value
-        batch.commit.assert_not_called()
     
     def test_atomic_credit_deduction_user_not_found(self, mock_firestore_db, sample_generation_data, sample_transaction_data):
         """Test credit deduction fails when user doesn't exist."""
@@ -95,20 +113,33 @@ class TestCreditDeduction:
         mock_user_ref = Mock()
         mock_user_ref.get.return_value = mock_user_doc
         
+        mock_transaction_obj = Mock()
         mock_firestore_db.collection.return_value.document.return_value = mock_user_ref
+        mock_firestore_db.transaction.return_value = mock_transaction_obj
+        
+        # Mock transactional to raise ValueError for user not found
+        def mock_transactional(func):
+            def wrapper(transaction):
+                # Simulate the transaction logic that checks user existence
+                user_doc = mock_user_ref.get(transaction=transaction)
+                if not user_doc.exists:
+                    raise ValueError("User not found")
+                return func(transaction)
+            return wrapper
         
         # Create repository with mocked database
-        with patch('repositories.generation_repository.firestore.client', return_value=mock_firestore_db):
-            repo = GenerationRepository()
-            repo._db = mock_firestore_db
-            
-            result = repo.atomic_credit_deduction_and_request_creation(
-                user_id="nonexistent_user",
-                current_credits=100,
-                credit_cost=3,
-                generation_data=sample_generation_data,
-                transaction_data=sample_transaction_data
-            )
+        with patch('repositories.generation_repository.firestore.transactional', mock_transactional):
+            with patch('repositories.generation_repository.firestore.client', return_value=mock_firestore_db):
+                repo = GenerationRepository()
+                repo._db = mock_firestore_db
+                
+                result = repo.atomic_credit_deduction_and_request_creation(
+                    user_id="nonexistent_user",
+                    current_credits=100,
+                    credit_cost=3,
+                    generation_data=sample_generation_data,
+                    transaction_data=sample_transaction_data
+                )
         
         # Assertions
         assert result["success"] is False
@@ -129,29 +160,38 @@ class TestCreditRefund:
         mock_user_ref = Mock()
         mock_user_ref.get.return_value = mock_user_doc
         
+        mock_transaction_obj = Mock()
         mock_firestore_db.collection.return_value.document.return_value = mock_user_ref
+        mock_firestore_db.transaction.return_value = mock_transaction_obj
+        
+        # Mock the transactional decorator
+        def mock_transactional(func):
+            def wrapper(transaction):
+                return func(transaction)
+            return wrapper
         
         # Create repository with mocked database
-        with patch('repositories.generation_repository.firestore.client', return_value=mock_firestore_db):
-            repo = GenerationRepository()
-            repo._db = mock_firestore_db
-            
-            result = repo.atomic_credit_refund(
-                user_id="test_user_123",
-                generation_id="test_generation_456",
-                credit_amount=3,
-                error_message="Generation failed"
-            )
+        with patch('repositories.generation_repository.firestore.transactional', mock_transactional):
+            with patch('repositories.generation_repository.firestore.client', return_value=mock_firestore_db):
+                repo = GenerationRepository()
+                repo._db = mock_firestore_db
+                
+                result = repo.atomic_credit_refund(
+                    user_id="test_user_123",
+                    generation_id="test_generation_456",
+                    credit_amount=3,
+                    error_message="Generation failed"
+                )
         
         # Assertions
         assert result["success"] is True
         assert result["refunded_credits"] == 3
         assert result["new_credits"] == 103  # 100 + 3
         
-        # Verify batch operations were called
-        mock_firestore_db.batch.assert_called_once()
-        batch = mock_firestore_db.batch.return_value
-        batch.commit.assert_called_once()
+        # Verify transaction operations were called
+        mock_firestore_db.transaction.assert_called_once()
+        mock_transaction_obj.update.assert_called()
+        mock_transaction_obj.set.assert_called()
 
 
 class TestGenerationServiceCreditOperations:

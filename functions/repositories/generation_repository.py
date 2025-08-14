@@ -65,37 +65,13 @@ class GenerationRepository(BaseRepository):
         transaction_data: Dict[str, Any]
     ) -> Dict[str, Any]:
         """
-        Deduct credits and create generation request.
+        Deduct credits and create generation request using Firestore transaction.
         """
         try:
             generation_id = str(uuid.uuid4())
             transaction_id = str(uuid.uuid4())
             
-            # References
-            user_ref = self.db.collection(Config.get_collection_name("users")).document(user_id)
-            generation_ref = self.db.collection(
-                Config.get_collection_name("generation_requests")
-            ).document(generation_id)
-            transaction_ref = user_ref.collection("transactions").document(transaction_id)
-            
-            # Use Firestore batch for atomic operations
-            batch = self.db.batch()
-            
-            # Verify user exists and has sufficient credits
-            user_doc = user_ref.get()
-            if not user_doc.exists:
-                raise ValueError("User not found")
-            
-            user_data = user_doc.to_dict()
-            current_user_credits = user_data.get("current_credits", 0)
-            
-            if current_user_credits < credit_cost:
-                raise ValueError("Insufficient credits")
-            
-            # Calculate new credit balance
-            new_credits = current_user_credits - credit_cost
-            
-            # Prepare data
+            # Prepare data outside transaction
             generation_data["id"] = generation_id
             generation_data["created_at"] = datetime.now()
             generation_data["updated_at"] = datetime.now()
@@ -105,20 +81,46 @@ class GenerationRepository(BaseRepository):
             transaction_data["generation_request_id"] = generation_id
             transaction_data["timestamp"] = datetime.now()
             
-            # Update user credits
-            batch.update(user_ref, {
-                "current_credits": new_credits,
-                "updated_at": datetime.now()
-            })
+            @firestore.transactional
+            def deduct_credits_transaction(transaction):
+                # References
+                user_ref = self.db.collection(Config.get_collection_name("users")).document(user_id)
+                generation_ref = self.db.collection(
+                    Config.get_collection_name("generation_requests")
+                ).document(generation_id)
+                transaction_ref = user_ref.collection("transactions").document(transaction_id)
+                
+                # Read user document within transaction
+                user_doc = user_ref.get(transaction=transaction)
+                if not user_doc.exists:
+                    raise ValueError("User not found")
+                
+                user_data = user_doc.to_dict()
+                current_user_credits = user_data.get("current_credits", 0)
+                
+                if current_user_credits < credit_cost:
+                    raise ValueError("Insufficient credits")
+                
+                # Calculate new credit balance
+                new_credits = current_user_credits - credit_cost
+                
+                # Update user credits
+                transaction.update(user_ref, {
+                    "current_credits": new_credits,
+                    "updated_at": datetime.now()
+                })
+                
+                # Create generation request
+                transaction.set(generation_ref, generation_data)
+                
+                # Create transaction record
+                transaction.set(transaction_ref, transaction_data)
+                
+                return new_credits
             
-            # Create generation request
-            batch.set(generation_ref, generation_data)
-            
-            # Create transaction record
-            batch.set(transaction_ref, transaction_data)
-            
-            # Commit all operations atomically
-            batch.commit()
+            # Execute transaction
+            transaction = self.db.transaction()
+            new_credits = deduct_credits_transaction(transaction)
             
             return {
                 "success": True,
@@ -147,31 +149,12 @@ class GenerationRepository(BaseRepository):
         error_message: str
     ) -> Dict[str, Any]:
         """
-        Refund credits and update generation request status.
+        Refund credits and update generation request status using Firestore transaction.
         """
         try:
             refund_transaction_id = str(uuid.uuid4())
             
-            # References
-            user_ref = self.db.collection(Config.get_collection_name("users")).document(user_id)
-            generation_ref = self.db.collection(
-                Config.get_collection_name("generation_requests")
-            ).document(generation_id)
-            transaction_ref = user_ref.collection("transactions").document(refund_transaction_id)
-            
-            # Use Firestore batch for atomic operations
-            batch = self.db.batch()
-            
-            # Get current user credits
-            user_doc = user_ref.get()
-            if not user_doc.exists:
-                raise ValueError("User not found")
-            
-            user_data = user_doc.to_dict()
-            current_credits = user_data.get("current_credits", 0)
-            new_credits = current_credits + credit_amount
-            
-            # Prepare refund transaction
+            # Prepare refund transaction data outside transaction
             refund_transaction_data = {
                 "id": refund_transaction_id,
                 "type": TransactionType.REFUND.value,
@@ -182,25 +165,46 @@ class GenerationRepository(BaseRepository):
                 "description": f"Refund for failed generation: {error_message}"
             }
             
-            # Update user credits
-            batch.update(user_ref, {
-                "current_credits": new_credits,
-                "updated_at": datetime.now()
-            })
+            @firestore.transactional
+            def refund_credits_transaction(transaction):
+                # References
+                user_ref = self.db.collection(Config.get_collection_name("users")).document(user_id)
+                generation_ref = self.db.collection(
+                    Config.get_collection_name("generation_requests")
+                ).document(generation_id)
+                transaction_ref = user_ref.collection("transactions").document(refund_transaction_id)
+                
+                # Read user document within transaction
+                user_doc = user_ref.get(transaction=transaction)
+                if not user_doc.exists:
+                    raise ValueError("User not found")
+                
+                user_data = user_doc.to_dict()
+                current_credits = user_data.get("current_credits", 0)
+                new_credits = current_credits + credit_amount
+                
+                # Update user credits
+                transaction.update(user_ref, {
+                    "current_credits": new_credits,
+                    "updated_at": datetime.now()
+                })
+                
+                # Update generation request status
+                transaction.update(generation_ref, {
+                    "status": "failed",
+                    "error_message": error_message,
+                    "updated_at": datetime.now(),
+                    "completed_at": datetime.now()
+                })
+                
+                # Create refund transaction record
+                transaction.set(transaction_ref, refund_transaction_data)
+                
+                return new_credits
             
-            # Update generation request status
-            batch.update(generation_ref, {
-                "status": "failed",
-                "error_message": error_message,
-                "updated_at": datetime.now(),
-                "completed_at": datetime.now()
-            })
-            
-            # Create refund transaction record
-            batch.set(transaction_ref, refund_transaction_data)
-            
-            # Commit all operations atomically
-            batch.commit()
+            # Execute transaction
+            transaction = self.db.transaction()
+            new_credits = refund_credits_transaction(transaction)
             
             return {
                 "success": True,
